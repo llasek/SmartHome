@@ -1,0 +1,27 @@
+pi@raspberrypi:~ $ while true ;
+do
+sleep 0.05 ; mosquitto_pub -d -t light_cli -m "1d"
+sleep 0.05 ; mosquitto_pub -d -t light_cli -m "1s"
+sleep 0.05 ; mosquitto_pub -d -t light_cli -m "2d"
+sleep 0.05 ; mosquitto_pub -d -t light_cli -m "1d"
+sleep 0.05 ; mosquitto_pub -d -t light_cli -m "2s"
+sleep 0.05 ; mosquitto_pub -d -t light_cli -m "1l"
+sleep 0.05 ; mosquitto_pub -d -t light_cli -m "3d"
+sleep 0.05 ; mosquitto_pub -d -t light_cli -m "2d"
+sleep 0.05 ; mosquitto_pub -d -t light_cli -m "3s"
+sleep 0.05 ; mosquitto_pub -d -t light_cli -m "2l"
+sleep 0.05 ; mosquitto_pub -d -t light_cli -m "3d"
+sleep 0.05 ; mosquitto_pub -d -t light_cli -m "3l"
+done
+
+mosquitto_pub -d -t light_cli -m "1s"
+mosquitto_pub -d -t light_cli -m "2s"
+mosquitto_pub -d -t light_cli -m "3s"
+
+mosquitto_pub -d -t light_cli -m "1d"
+mosquitto_pub -d -t light_cli -m "2d"
+mosquitto_pub -d -t light_cli -m "3d"
+
+mosquitto_pub -d -t light_cli -m "1l"
+mosquitto_pub -d -t light_cli -m "2l"
+mosquitto_pub -d -t light_cli -m "3l"
