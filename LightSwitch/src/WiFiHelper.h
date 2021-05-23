@@ -19,11 +19,14 @@
  */
 #define FS_WIFI_CFG     "wifi_cfg"
 
-class CWiFiHelper : public CWiFiHelperBase {
+class CWiFiHelper : public CWiFiHelperBase
+{
 public:
-    void ReadCfg() {
+    void ReadCfg()
+    {
         File file = LittleFS.open( FS_WIFI_CFG, "r" );
-        if( file ) {
+        if( file )
+        {
             m_strSsid = file.readStringUntil( '\n' );
             m_strPwd = file.readStringUntil( '\n' );
             m_nConnTimeout = file.readStringUntil( '\n' ).toInt();
@@ -32,26 +35,32 @@ public:
             DBGLOG3( "wifi cfg: ssid:'%s' pwd:'%s' timeo:%lus\n",
                 m_strSsid.c_str(), m_strPwd.c_str(), m_nConnTimeout );
             m_nConnTimeout *= 1000;
-        } else {
+        }
+        else
+        {
             DBGLOG( "wifi cfg missing" );
         }
     }
 
-    void Enable() {
+    void Enable()
+    {
         Init( m_strSsid.c_str(), m_strPwd.c_str(), m_nConnTimeout );
         SetupSta();
     }
 
-    virtual void OnConnect() {
+    virtual void OnConnect()
+    {
         ArduinoOTA.begin();
         DBGLOG1( "OTA begin: %s\n", ArduinoOTA.getHostname().c_str());
     }
 
-    virtual void OnDisconnect() {
+    virtual void OnDisconnect()
+    {
         SetupSta();
     }
 
-    void loop() {
+    void loop()
+    {
         ArduinoOTA.handle();
     }
 

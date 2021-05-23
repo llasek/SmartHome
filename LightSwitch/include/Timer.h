@@ -6,30 +6,37 @@
 #include <Arduino.h>
 #include <limits.h>
 
-class CTimer {
+class CTimer
+{
 public:
-    CTimer() {
+    CTimer()
+    {
         UpdateAll();
     }
 
-    void UpdateCur() {
+    void UpdateCur()
+    {
         m_tmCur = millis();
-        if( m_tmCur < m_tmLast ) {
+        if( m_tmCur < m_tmLast )
+        {
             m_tmCur += ULONG_MAX - m_tmLast;
             m_tmCur += 1;
             m_tmLast = 0;
         }
     }
 
-    void UpdateLast() {
+    void UpdateLast()
+    {
         m_tmLast = m_tmCur;
     }
 
-    void UpdateAll() {
+    void UpdateAll()
+    {
         m_tmCur = m_tmLast = millis();
     }
 
-    ulong Delta() {
+    ulong Delta()
+    {
         return m_tmCur - m_tmLast;
     }
 

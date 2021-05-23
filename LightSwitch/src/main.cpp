@@ -12,19 +12,38 @@
 CWiFiHelper g_wifi;
 CMqtt g_mqtt;
 
-CManualSwitch g_swLight1;
-CManualSwitch g_swLight2;
-CManualSwitch g_swLight3;
+CManualSwitch g_swChan0;
+CManualSwitch g_swChan1;
+CManualSwitch g_swChan2;
 
-void setup() {
-    Serial.begin( 115200 );
-    Serial.println();
+void EnableAll()
+{
+    DBGLOG( "Enable btns" );
+    g_mqtt.Enable();
+    g_swChan0.Enable( 0 );
+    g_swChan1.Enable( 1 );
+    g_swChan2.Enable( 2 );
+}
 
-    if( LittleFS.begin()) {
+void DisableAll()
+{
+    DBGLOG( "Disable btns" );
+    g_swChan0.Disable();
+    g_swChan1.Disable();
+    g_swChan2.Disable();
+    g_mqtt.Disable();
+}
+
+void setup()
+{
+    DbgLogSetup();
+
+    if( LittleFS.begin())
+    {
         File file = CManualSwitch::OpenCfg();
-        g_swLight1.ReadCfg( file );
-        g_swLight2.ReadCfg( file );
-        g_swLight3.ReadCfg( file );
+        g_swChan0.ReadCfg( file );
+        g_swChan1.ReadCfg( file );
+        g_swChan2.ReadCfg( file );
         file.close();
 
         g_wifi.ReadCfg();
@@ -34,38 +53,45 @@ void setup() {
         g_mqtt.Enable();
 
         LittleFS.end();
-    } else {
+    }
+    else
+    {
         DBGLOG( "FS failed" );
     }
 
-    g_swLight1.Enable( PIN_IN1, PIN_OUT1 );
-    g_swLight2.Enable( PIN_IN2, PIN_OUT2 );
-    g_swLight3.Enable( PIN_IN3, PIN_OUT3 );
+    EnableAll();
 
-    // ArduinoOTA.onStart( []() {
-    //     if( ArduinoOTA.getCommand() == U_FLASH ) {
-    //         DBGLOG( "OTA flash" );
-    //     } else {
-    //         DBGLOG( "OTA fs" );
-    //     }
-    // });
-    // ArduinoOTA.onEnd( []() {
-    //     DBGLOG( "OTA end" );
-    // });
-    // ArduinoOTA.onProgress( []( uint prog, uint tot ) {
-    // });
-    // ArduinoOTA.onError( []( ota_error_t err ) {
-    //     DBGLOG1( "OTA err %u\n", err );
-    // });
+    ArduinoOTA.onStart(
+        []()
+        {
+            DisableAll();
+            if( ArduinoOTA.getCommand() == U_FLASH ) {
+                DBGLOG( "OTA flash" );
+            } else {
+                DBGLOG( "OTA fs" );
+            }
+        });
+    ArduinoOTA.onEnd(
+        []()
+        {
+            DBGLOG( "OTA end" );    // will reboot
+        });
+    ArduinoOTA.onError(
+        []( ota_error_t err )
+        {
+            EnableAll();
+            DBGLOG1( "OTA err %u\n", err );
+        });
 }
 
 void loop()
 {
-    if( g_wifi.Connected()) {
+    if( g_wifi.Connected())
+    {
         g_wifi.loop();
         g_mqtt.loop();
     }
-    g_swLight1.loop();
-    g_swLight2.loop();
-    g_swLight3.loop();
+    g_swChan0.loop();
+    g_swChan1.loop();
+    g_swChan2.loop();
 }

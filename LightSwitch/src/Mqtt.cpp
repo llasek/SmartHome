@@ -6,45 +6,57 @@
 #include "Mqtt.h"
 #include "ManualSwitch.h"
 
-extern CManualSwitch g_swLight1;
-extern CManualSwitch g_swLight2;
-extern CManualSwitch g_swLight3;
+extern CManualSwitch g_swChan0;
+extern CManualSwitch g_swChan1;
+extern CManualSwitch g_swChan2;
 
-void CMqtt::MqttCb( char* topic, byte* payload, uint len ) {
-    // @todo: implement, test code below
-    Serial.printf( "Rcvd topic %s: '", topic );
-    for( uint i = 0; i < len; i++ ) {
-        Serial.print((char)payload[ i ]);
+void CMqtt::loop()
+{
+    if( !m_bEnabled )
+        return;
+
+    if(( !m_mqtt.connected()) && ( m_mqtt.connect( m_strClientId.c_str())))
+    {
+        m_mqtt.subscribe( m_strSubTopicCmd.c_str());
+        DBGLOG( "mqtt connected" );
+        Heartbeat( true );
+        g_swChan0.OnMqttConnected();
+        g_swChan1.OnMqttConnected();
+        g_swChan2.OnMqttConnected();
     }
-    Serial.println( '\'' );
+    Heartbeat( false );
+    m_mqtt.loop();
+}
 
-    if(( m_strSubTopicAct == topic ) && ( len > 1 )) {
-        byte nSw = ( payload[ 0 ] - '0' );
-        if(( nSw == 0 ) || ( nSw > 3 )) {
-            m_mqtt.publish( m_strPubTopicAct.c_str(), "wtf?" );
-            return;
-        }
-        CManualSwitch& rSw = ( nSw == 1 ) ? g_swLight1 : ( nSw == 2 ) ? g_swLight2 : g_swLight3;
-        byte nAct = payload[ 1 ];
+void CMqtt::MqttCb( char* topic, byte* payload, uint len )
+{
+    DBGLOG1( "Rcvd topic %s: '", topic );
+    for( uint i = 0; i < len; i++ )
+    {
+        DBGLOG1( "%c", (char)payload[ i ]);
+    }
+    DBGLOG( '\'' );
 
-        switch( nAct )
-        {
-            case 's':
+    if(( len == MQTT_CMD_RESET_LEN ) && ( !memcmp( MQTT_CMD_RESET, payload, len )))
+    {
+        DBGLOG( "reset" );
+        Disable();
+        ESP.reset();
+    }
+
+    if((( len == MQTT_CMD_CH_ON_LEN ) || ( len == MQTT_CMD_CH_OFF_LEN ))
+        && ( payload[ 0 ] == 'c' )
+        && ( payload[ 1 ] == 'h' ))
+    {
+        uint8_t nChanNo = payload[ 2 ] - '0';
+        if( nChanNo < SW_CHANNELS ) {
+            CManualSwitch& rSw = ( nChanNo == 0 ) ? g_swChan0 : ( nChanNo == 1 ) ? g_swChan1 : g_swChan2;
+            bool bEnable = ( len == 5 ) && ( payload[ 3 ] == 'o' ) && ( payload[ 4 ] == 'n' );
+            bool bDisable = ( len == 6 ) && ( payload[ 3 ] == 'o' ) && ( payload[ 4 ] == 'f' ) && ( payload[ 5 ] == 'f' );
+            if( bEnable )
                 rSw.OnShortClick();
-                break;
-
-            case 'l':
+            else if( bDisable )
                 rSw.OnLongClick();
-                break;
-
-            case 'd':
-                rSw.OnDblClick();
-                break;
-
-            default:
-                m_mqtt.publish( m_strPubTopicAct.c_str(), "woot?" );
-                return;
         }
     }
-    m_mqtt.publish( m_strPubTopicAct.c_str(), "mkay" );
 }

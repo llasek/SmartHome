@@ -1,8 +1,7 @@
-raspberrypi
+openhabian
 1883
 10
-light-testbed
-light_cli
-light_srv
-lightm_cli
-lightm_srv
+60000
+sw_testbed
+sw/cmd/testbed
+sw/stat/testbed

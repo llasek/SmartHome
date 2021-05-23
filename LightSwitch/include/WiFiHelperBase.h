@@ -8,38 +8,49 @@
 #include "Timer.h"
 #include "dbg.h"
 
-class CWiFiHelperBase {
+class CWiFiHelperBase
+{
 public:
     CWiFiHelperBase() {}
 
-    void Init( const char* a_pszSsid, const char* a_pszPwd, ulong a_nConnTimeout = 0 ) {
+    void Init( const char* a_pszSsid, const char* a_pszPwd, ulong a_nConnTimeout = 0 )
+    {
         m_pszSsid = a_pszSsid;
         m_pszPwd = a_pszPwd;
         m_nConnTimeout = a_nConnTimeout;
 
-        m_evtConn = WiFi.onStationModeConnected( [ this ]( const WiFiEventStationModeConnected& arg ) {
-            DBGLOG1( "Wifi connected: %lu\n", m_tm.Delta());
-        });
-        m_evtDisconn = WiFi.onStationModeDisconnected( [ this ]( const WiFiEventStationModeDisconnected& arg ) {
-            DBGLOG( "Wifi disconnected" );
-            m_bConn = false;
-            OnDisconnect();
-        });
-        m_evtGotIp = WiFi.onStationModeGotIP( [ this ]( const WiFiEventStationModeGotIP& arg ) {
-            DBGLOG_( "Wifi ip: " );
-            DBGLOG( WiFi.localIP());
-            m_bConn = true;
-            OnConnect();
-        });
-        m_evtDhcpTimeout = WiFi.onStationModeDHCPTimeout( [ this ]() {
-            DBGLOG( "Wifi dhcp timeout" );
-            m_bConn = false;
-            OnDisconnect();
-        });
+        m_evtConn = WiFi.onStationModeConnected(
+            [ this ]( const WiFiEventStationModeConnected& arg )
+            {
+                DBGLOG1( "Wifi connected: %lu\n", m_tm.Delta());
+            });
+        m_evtDisconn = WiFi.onStationModeDisconnected(
+            [ this ]( const WiFiEventStationModeDisconnected& arg )
+            {
+                DBGLOG( "Wifi disconnected" );
+                m_bConn = false;
+                OnDisconnect();
+            });
+        m_evtGotIp = WiFi.onStationModeGotIP(
+            [ this ]( const WiFiEventStationModeGotIP& arg )
+            {
+                DBGLOG_( "Wifi ip: " );
+                DBGLOG( WiFi.localIP());
+                m_bConn = true;
+                OnConnect();
+            });
+        m_evtDhcpTimeout = WiFi.onStationModeDHCPTimeout(
+            [ this ]()
+            {
+                DBGLOG( "Wifi dhcp timeout" );
+                m_bConn = false;
+                OnDisconnect();
+            });
         m_tm.UpdateAll();
     }
 
-    void SetupSta() {
+    void SetupSta()
+    {
         DBGLOG( "Wifi STA setup" );
         WiFi.disconnect();
         WiFi.mode( WIFI_STA );
@@ -49,13 +60,18 @@ public:
     virtual void OnConnect() {}
     virtual void OnDisconnect() {}
 
-    bool Connected() {
+    bool Connected()
+    {
         m_tm.UpdateCur();
-        if( m_bConn ) {
+        if( m_bConn )
+        {
             m_tm.UpdateLast();
             return true;
-        } else {
-            if(( m_nConnTimeout ) && ( m_tm.Delta() > m_nConnTimeout )) {
+        }
+        else
+        {
+            if(( m_nConnTimeout ) && ( m_tm.Delta() > m_nConnTimeout ))
+            {
                 DBGLOG1( "Wifi retry failed for %lu - issue reset\n", m_tm.Delta());
                 ESP.reset();
             }

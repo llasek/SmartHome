@@ -13,6 +13,12 @@
     #define DBGLOG3( fmt, arg1, arg2, arg3 ) Serial.printf( fmt, arg1, arg2, arg3 )
     #define DBGLOG4( fmt, arg1, arg2, arg3, arg4 ) Serial.printf( fmt, arg1, arg2, arg3, arg4 )
     #define DBGLOG5( fmt, arg1, arg2, arg3, arg4, arg5 ) Serial.printf( fmt, arg1, arg2, arg3, arg4, arg5 )
+
+static inline void DbgLogSetup()
+{
+    Serial.begin( 115200 );
+    Serial.println();
+}
 #else
     #define DBGLOG_( msg )
     #define DBGLOG( msg )
@@ -21,4 +27,8 @@
     #define DBGLOG3( fmt, arg1, arg2, arg3 )
     #define DBGLOG4( fmt, arg1, arg2, arg3, arg4 )
     #define DBGLOG5( fmt, arg1, arg2, arg3, arg4, arg5 )
+
+static inline void DbgLogSetup()
+{
+}
 #endif
