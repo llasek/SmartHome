@@ -30,17 +30,13 @@
 #define MQTT_CMD_RESET      "reset"
 #define MQTT_CMD_RESET_LEN  5
 
-#define MQTT_CMD_CH_ON      "ch_on"     // '_' is chan#
-#define MQTT_CMD_CH_ON_LEN  5
+#define MQTT_CMD_CH_ON      "on"
+#define MQTT_CMD_CH_ON_LEN  2
 
-#define MQTT_CMD_CH_OFF     "ch_off"    // '_' is chan#
-#define MQTT_CMD_CH_OFF_LEN 6
+#define MQTT_CMD_CH_OFF     "off"
+#define MQTT_CMD_CH_OFF_LEN 3
 
-#define MQTT_STAT_SIZE  (( MQTT_CMD_CH_ON_LEN > MQTT_CMD_CH_OFF_LEN ) ? MQTT_CMD_CH_ON_LEN : MQTT_CMD_CH_OFF_LEN )
-#define DECL_MQTT_STAT( strName )           \
-    String strName;                         \
-    strName.reserve( MQTT_STAT_SIZE + 1 );  \
-    strName = "ch";
+#define MQTT_TOPIC_CHANNEL  "/ch"
 
 class CMqtt
 {
@@ -94,32 +90,37 @@ public:
         // m_mqtt.disconnect();
     }
 
-    void Heartbeat( bool a_bForceSend )
+    bool PubStat( char a_nChannel, bool a_bStateOn )
     {
-        m_tmHeartbeat.UpdateCur();
-        if((( m_nHeartbeatIntvl > 0 ) && ( a_bForceSend )) || ( m_tmHeartbeat.Delta() >= m_nHeartbeatIntvl ))
-        {
-            PubStat( MQTT_STAT_ONLINE );
-            m_tmHeartbeat.UpdateLast();
-        }
+        return PubStat( a_nChannel, ( a_bStateOn ) ? MQTT_CMD_CH_ON : MQTT_CMD_CH_OFF );
     }
 
-    bool PubStat( char a_nChanNo, bool a_bStateOn )
-    {
-        DECL_MQTT_STAT( strMqttStat );
-        strMqttStat += a_nChanNo;
-        strMqttStat += ( a_bStateOn ) ? "on" : "off";
-        return PubStat( strMqttStat.c_str());
-    }
-
+    void Heartbeat( bool a_bForceSend );
     void loop();
     void MqttCb( char* topic, byte* payload, uint len );
 
 protected:
+    String GetChannelTopic( char a_nChannel, String& a_rstrTopic )
+    {
+        String strTopic( a_rstrTopic );
+        if( a_nChannel )
+        {
+            strTopic += MQTT_TOPIC_CHANNEL;
+            strTopic += a_nChannel;
+        }
+        return strTopic;
+    }
+
+    bool PubStat( char a_nChannel, const char* a_pszMsg )
+    {
+        String strTopic = GetChannelTopic( a_nChannel, m_strPubTopicStat );
+        DBGLOG2( "mqtt pub t:'%s' p:'%s'\n", strTopic.c_str(), a_pszMsg );
+        return m_mqtt.publish( strTopic.c_str(), a_pszMsg );
+    }
+
     bool PubStat( const char* a_pszMsg )
     {
-        DBGLOG2( "mqtt pub t:'%s' p:'%s'\n", m_strPubTopicStat.c_str(), a_pszMsg );
-        return m_mqtt.publish( m_strPubTopicStat.c_str(), a_pszMsg );
+        return PubStat( 0, a_pszMsg );
     }
 
     WiFiClient m_wc;

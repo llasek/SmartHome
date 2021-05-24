@@ -49,11 +49,13 @@ public:
         m_tm.UpdateAll();
     }
 
-    void SetupSta()
+    void SetupSta( const char* a_pszHostname = nullptr )
     {
         DBGLOG( "Wifi STA setup" );
         WiFi.disconnect();
         WiFi.mode( WIFI_STA );
+        if( a_pszHostname )
+            WiFi.hostname( a_pszHostname );
         WiFi.begin( m_pszSsid, m_pszPwd );
     }
 

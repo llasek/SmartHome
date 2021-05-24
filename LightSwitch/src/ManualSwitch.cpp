@@ -22,23 +22,18 @@ char CManualSwitch::GetChanNo()
     switch( m_nPin )
     {
         case PIN_IN0:
-            return '0';
+            return SW_CHANNEL_0;
 
         case PIN_IN1:
-            return '1';
+            return SW_CHANNEL_1;
 
         case PIN_IN2:
-            return '2';
+            return SW_CHANNEL_2;
     }
-    return 'x';
+    return SW_CHANNEL_NA;
 }
 
-void CManualSwitch::MqttPubStat( bool a_bStateOn )
-{
-    g_mqtt.PubStat( GetChanNo(), a_bStateOn );
-}
-
-void CManualSwitch::OnMqttConnected()
+void CManualSwitch::MqttPubStat()
 {
     g_mqtt.PubStat( GetChanNo(), GetSwitchState());
 }

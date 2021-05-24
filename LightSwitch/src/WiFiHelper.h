@@ -16,6 +16,7 @@
  * 1: ssid
  * 2: pwd
  * 3: conn timeout in sec - reset
+ * 4: hostname
  */
 #define FS_WIFI_CFG     "wifi_cfg"
 
@@ -30,10 +31,11 @@ public:
             m_strSsid = file.readStringUntil( '\n' );
             m_strPwd = file.readStringUntil( '\n' );
             m_nConnTimeout = file.readStringUntil( '\n' ).toInt();
+            m_strHostname = file.readStringUntil( '\n' );
             file.close();
 
-            DBGLOG3( "wifi cfg: ssid:'%s' pwd:'%s' timeo:%lus\n",
-                m_strSsid.c_str(), m_strPwd.c_str(), m_nConnTimeout );
+            DBGLOG4( "wifi cfg: ssid:'%s' pwd:'%s' timeo:%lus hostname:'%s'\n",
+                m_strSsid.c_str(), m_strPwd.c_str(), m_nConnTimeout, m_strHostname.c_str());
             m_nConnTimeout *= 1000;
         }
         else
@@ -45,18 +47,19 @@ public:
     void Enable()
     {
         Init( m_strSsid.c_str(), m_strPwd.c_str(), m_nConnTimeout );
-        SetupSta();
+        SetupSta( m_strHostname.c_str());
     }
 
     virtual void OnConnect()
     {
+        ArduinoOTA.setHostname( m_strHostname.c_str());
         ArduinoOTA.begin();
         DBGLOG1( "OTA begin: %s\n", ArduinoOTA.getHostname().c_str());
     }
 
     virtual void OnDisconnect()
     {
-        SetupSta();
+        SetupSta( m_strHostname.c_str());
     }
 
     void loop()
@@ -65,6 +68,6 @@ public:
     }
 
 protected:
-    String m_strSsid, m_strPwd;
+    String m_strSsid, m_strPwd, m_strHostname;
     ulong m_nConnTimeout;
 };

@@ -10,6 +10,19 @@ extern CManualSwitch g_swChan0;
 extern CManualSwitch g_swChan1;
 extern CManualSwitch g_swChan2;
 
+void CMqtt::Heartbeat( bool a_bForceSend )
+{
+    m_tmHeartbeat.UpdateCur();
+    if((( m_nHeartbeatIntvl > 0 ) && ( a_bForceSend )) || ( m_tmHeartbeat.Delta() >= m_nHeartbeatIntvl ))
+    {
+        PubStat( MQTT_STAT_ONLINE );
+        m_tmHeartbeat.UpdateLast();
+        g_swChan0.MqttPubStat();
+        g_swChan1.MqttPubStat();
+        g_swChan2.MqttPubStat();
+    }
+}
+
 void CMqtt::loop()
 {
     if( !m_bEnabled )
@@ -18,11 +31,12 @@ void CMqtt::loop()
     if(( !m_mqtt.connected()) && ( m_mqtt.connect( m_strClientId.c_str())))
     {
         m_mqtt.subscribe( m_strSubTopicCmd.c_str());
+        String strMqttSubTopicChan( m_strSubTopicCmd + MQTT_TOPIC_CHANNEL );
+        m_mqtt.subscribe(( strMqttSubTopicChan + SW_CHANNEL_0 ).c_str());
+        m_mqtt.subscribe(( strMqttSubTopicChan + SW_CHANNEL_1 ).c_str());
+        m_mqtt.subscribe(( strMqttSubTopicChan + SW_CHANNEL_2 ).c_str());
         DBGLOG( "mqtt connected" );
         Heartbeat( true );
-        g_swChan0.OnMqttConnected();
-        g_swChan1.OnMqttConnected();
-        g_swChan2.OnMqttConnected();
     }
     Heartbeat( false );
     m_mqtt.loop();
@@ -37,26 +51,40 @@ void CMqtt::MqttCb( char* topic, byte* payload, uint len )
     }
     DBGLOG( '\'' );
 
-    if(( len == MQTT_CMD_RESET_LEN ) && ( !memcmp( MQTT_CMD_RESET, payload, len )))
+    if( m_strSubTopicCmd == topic )
     {
-        DBGLOG( "reset" );
-        Disable();
-        ESP.reset();
+        if(( len == MQTT_CMD_RESET_LEN ) && ( !memcmp( MQTT_CMD_RESET, payload, len )))
+        {
+            DBGLOG( "reset" );
+            Disable();
+            ESP.reset();
+        }
+        return;
     }
 
-    if((( len == MQTT_CMD_CH_ON_LEN ) || ( len == MQTT_CMD_CH_OFF_LEN ))
-        && ( payload[ 0 ] == 'c' )
-        && ( payload[ 1 ] == 'h' ))
+    CManualSwitch* pms = nullptr;
+    if( GetChannelTopic( SW_CHANNEL_0, m_strSubTopicCmd ) == topic )
     {
-        uint8_t nChanNo = payload[ 2 ] - '0';
-        if( nChanNo < SW_CHANNELS ) {
-            CManualSwitch& rSw = ( nChanNo == 0 ) ? g_swChan0 : ( nChanNo == 1 ) ? g_swChan1 : g_swChan2;
-            bool bEnable = ( len == 5 ) && ( payload[ 3 ] == 'o' ) && ( payload[ 4 ] == 'n' );
-            bool bDisable = ( len == 6 ) && ( payload[ 3 ] == 'o' ) && ( payload[ 4 ] == 'f' ) && ( payload[ 5 ] == 'f' );
-            if( bEnable )
-                rSw.OnShortClick();
-            else if( bDisable )
-                rSw.OnLongClick();
+        pms = &g_swChan0;
+    }
+    else if( GetChannelTopic( SW_CHANNEL_1, m_strSubTopicCmd ) == topic )
+    {
+        pms = &g_swChan1;
+    }
+    else if( GetChannelTopic( SW_CHANNEL_2, m_strSubTopicCmd ) == topic )
+    {
+        pms = &g_swChan2;
+    }
+
+    if( pms )
+    {
+        if(( len == MQTT_CMD_CH_ON_LEN ) && ( !memcmp( MQTT_CMD_CH_ON, payload, len )))
+        {
+            pms->OnShortClick();
+        }
+        else if(( len == MQTT_CMD_CH_OFF_LEN ) && ( !memcmp( MQTT_CMD_CH_OFF, payload, len )))
+        {
+            pms->OnLongClick();
         }
     }
 }

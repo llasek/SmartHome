@@ -16,16 +16,16 @@
  * 1: switch channel 0: mode: 0:disabled, 1:enabled, 2:phantom
  * 2: switch channel 0: long click ms
  * 3: switch channel 0: dbl click ms
- * 4: switch channel 1: mode: 0:disabled, 1:enabled, 2:phantom
- * 5: switch channel 1: long click ms
- * 6: switch channel 1: dbl click ms
- * 7: switch channel 2: mode: 0:disabled, 1:enabled, 2:phantom
- * 8: switch channel 2: long click ms
- * 9: switch channel 2: dbl click ms
+ * 4..6: switch channel 1
+ * 7..9: switch channel 2
  */
 #define FS_SW_CFG       "sw_cfg"
 
-#define SW_CHANNELS 3
+#define SW_CHANNEL_0    '0'
+#define SW_CHANNEL_1    '1'
+#define SW_CHANNEL_2    '2'
+#define SW_CHANNEL_NA   0
+#define SW_CHANNELS     3
 
 class CManualSwitch : public CTouchBtn
 {
@@ -86,7 +86,7 @@ public:
         CTouchBtn::OnShortClick();
         DBGLOG1( "short click pin#%d\n", m_nPin );
         DriveSwitch( true );
-        MqttPubStat( true );
+        MqttPubStat();
     }
 
     virtual void OnLongClick()
@@ -94,7 +94,7 @@ public:
         CTouchBtn::OnLongClick();
         DBGLOG1( "long click pin#%d\n", m_nPin );
         DriveSwitch( false );
-        MqttPubStat( false );
+        MqttPubStat();
     }
 
     virtual void OnDblClick()
@@ -104,12 +104,11 @@ public:
         // @todo: demo, implement actions
         m_nPinSwitchVal = HIGH;
         analogWrite( m_nPinSwitch, 100 );
-        MqttPubStat( true );
+        MqttPubStat();
     }
 
     char GetChanNo();
-    void MqttPubStat( bool a_bStateOn );
-    void OnMqttConnected();
+    void MqttPubStat();
 
 protected:
     uint8_t m_nPinSwitch, m_nPinSwitchVal;
