@@ -5,12 +5,71 @@
  */
 #include "Mqtt.h"
 #include "ManualSwitch.h"
+#include "Utils.h"
 
 extern CManualSwitch g_swChan0;
 extern CManualSwitch g_swChan1;
 extern CManualSwitch g_swChan2;
 
-void CMqtt::Heartbeat( bool a_bForceSend )
+void CMqtt::ReadCfg()
+{
+    File file = LittleFS.open( FS_MQTT_CFG, "r" );
+    if( file )
+    {
+        m_strServer = file.readStringUntil( '\n' );
+        m_nPort = file.readStringUntil( '\n' ).toInt();
+        m_nConnTimeout = file.readStringUntil( '\n' ).toInt();
+        m_nHeartbeatIntvl = file.readStringUntil( '\n' ).toInt();
+        m_strClientId = file.readStringUntil( '\n' );
+        m_strSubTopicCmd = file.readStringUntil( '\n' );
+        m_strPubTopicStat = file.readStringUntil( '\n' );
+        m_strPubSubTopicPriv = file.readStringUntil( '\n' );
+
+        DBGLOG5( "mqtt cfg: server:'%s' port:%u timeo:%u heartbeat:%u client-id:'%s' ",
+            m_strServer.c_str(), m_nPort, m_nConnTimeout, m_nHeartbeatIntvl, m_strClientId.c_str());
+        DBGLOG3( "cmd-sub:'%s' stat-pub:'%s', prv:'%s'\n",
+            m_strSubTopicCmd.c_str(), m_strPubTopicStat.c_str(), m_strPubSubTopicPriv.c_str());
+    }
+    else
+    {
+        DBGLOG( "mqtt cfg missing" );
+    }
+}
+
+void CMqtt::Enable()
+{
+    if( m_bEnabled )
+        return;
+
+    m_bEnabled = true;
+    m_wc.setTimeout( m_nConnTimeout );
+    m_mqtt.setServer( m_strServer.c_str(), m_nPort );
+    m_mqtt.setCallback(
+        [ this ]( char* topic, byte* payload, uint len )
+        {
+            this->MqttCb( topic, payload, len );
+        });
+}
+
+void CMqtt::Disable()
+{
+    // Fake disable - report 'offline' only but don't actually disconnect mqtt to allow for a reset cmd in case of emergency
+    // m_bEnabled = false;
+    PubStat( MQTT_STAT_OFFLINE );
+    // m_mqtt.disconnect();
+}
+
+bool CMqtt::PubStat( char a_nChannel, bool a_bStateOn )
+{
+    return PubStat( a_nChannel, ( a_bStateOn ) ? MQTT_CMD_CH_ON : MQTT_CMD_CH_OFF );
+}
+
+bool CMqtt::PubPriv( const char* a_pszBeacon )
+{
+    return m_mqtt.publish( m_strPubSubTopicPriv.c_str(), a_pszBeacon );
+}
+
+void CMqtt::PubHeartbeat( bool a_bForceSend )
 {
     m_tmHeartbeat.UpdateCur();
     if((( m_nHeartbeatIntvl > 0 ) && ( a_bForceSend )) || ( m_tmHeartbeat.Delta() >= m_nHeartbeatIntvl ))
@@ -35,10 +94,11 @@ void CMqtt::loop()
         m_mqtt.subscribe(( strMqttSubTopicChan + SW_CHANNEL_0 ).c_str());
         m_mqtt.subscribe(( strMqttSubTopicChan + SW_CHANNEL_1 ).c_str());
         m_mqtt.subscribe(( strMqttSubTopicChan + SW_CHANNEL_2 ).c_str());
+        m_mqtt.subscribe( m_strPubSubTopicPriv.c_str());
         DBGLOG( "mqtt connected" );
-        Heartbeat( true );
+        PubHeartbeat( true );
     }
-    Heartbeat( false );
+    PubHeartbeat( false );
     m_mqtt.loop();
 }
 
@@ -53,13 +113,19 @@ void CMqtt::MqttCb( char* topic, byte* payload, uint len )
 
     if( m_strSubTopicCmd == topic )
     {
-        if(( len == MQTT_CMD_RESET_LEN ) && ( !memcmp( MQTT_CMD_RESET, payload, len )))
+        if( StringEq( MQTT_CMD_RESET, MQTT_CMD_RESET_LEN, payload, len ))
         {
             DBGLOG( "reset" );
             Disable();
             ESP.reset();
         }
         return;
+    }
+    else if( m_strPubSubTopicPriv == topic )
+    {
+        g_swChan0.OnMqttBeacon( payload, len );
+        g_swChan1.OnMqttBeacon( payload, len );
+        g_swChan2.OnMqttBeacon( payload, len );
     }
 
     CManualSwitch* pms = nullptr;
@@ -78,13 +144,33 @@ void CMqtt::MqttCb( char* topic, byte* payload, uint len )
 
     if( pms )
     {
-        if(( len == MQTT_CMD_CH_ON_LEN ) && ( !memcmp( MQTT_CMD_CH_ON, payload, len )))
+        if(( StringEq( MQTT_CMD_CH_ON, MQTT_CMD_CH_ON_LEN, payload, len ))
+            || ( StringEq( MQTT_CMD_CH_OFF, MQTT_CMD_CH_OFF_LEN, payload, len )))
         {
-            pms->OnShortClick();
-        }
-        else if(( len == MQTT_CMD_CH_OFF_LEN ) && ( !memcmp( MQTT_CMD_CH_OFF, payload, len )))
-        {
-            pms->OnLongClick();
+            pms->OnShortTap( 1 );
         }
     }
+}
+
+String CMqtt::GetChannelTopic( char a_nChannel, String& a_rstrTopic )
+{
+    String strTopic( a_rstrTopic );
+    if( a_nChannel )
+    {
+        strTopic += MQTT_TOPIC_CHANNEL;
+        strTopic += a_nChannel;
+    }
+    return strTopic;
+}
+
+bool CMqtt::PubStat( char a_nChannel, const char* a_pszMsg )
+{
+    String strTopic = GetChannelTopic( a_nChannel, m_strPubTopicStat );
+    DBGLOG2( "mqtt pub t:'%s' p:'%s'\n", strTopic.c_str(), a_pszMsg );
+    return m_mqtt.publish( strTopic.c_str(), a_pszMsg );
+}
+
+bool CMqtt::PubStat( const char* a_pszMsg )
+{
+    return PubStat( 0, a_pszMsg );
 }

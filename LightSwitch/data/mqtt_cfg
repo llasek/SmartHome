@@ -5,3 +5,4 @@ openhabian
 sw_testbed
 sw/cmd/testbed
 sw/stat/testbed
+sw/prv/testbed

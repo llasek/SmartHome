@@ -9,11 +9,11 @@
 class CTouchBtn
 {
 public:
-    CTouchBtn() {}
+    CTouchBtn() { m_state = EState::eDisabled; }
 
     void Enable( uint8_t a_nPin, uint16_t a_nLongClickMs, uint16_t a_nDblClickMs )
     {
-        m_state = EState::eIdle;
+        SetStateIdle();
         m_nLongClickMs = a_nLongClickMs;
         m_nDblClickMs = a_nDblClickMs;
         m_nPin = digitalPinToInterrupt( a_nPin );
@@ -32,6 +32,52 @@ public:
         return m_state != EState::eDisabled;
     }
 
+    void loop()
+    {
+        noInterrupts();
+        if( m_state == EState::eBtnReleased )
+        {
+            m_tmPress.UpdateCur();
+            ulong nPressDuration = m_tmPress.Delta();
+            if( nPressDuration >= m_nDblClickMs )
+            {
+                OnShortTap( m_nPressCnt );
+                // SetStateIdle();
+            }
+        }
+        interrupts();
+    }
+
+    virtual void OnShortTap( uint16_t a_nCnt )
+    {
+        SetStateIdle();
+    }
+
+    virtual void OnLongTap()
+    {
+        SetStateIdle();
+    }
+
+protected:
+    void SetStateIdle()
+    {
+        m_state = EState::eIdle;
+        m_nPressCnt = 0;
+    }
+
+    void SetStateBtnPressed()
+    {
+        m_state = EState::eBtnPressed;
+        m_tmPress.UpdateAll();
+    }
+
+    void SetStateBtnReleased()
+    {
+        m_state = EState::eBtnReleased;
+        m_nPressCnt++;
+        m_tmPress.UpdateAll();
+    }
+
     void OnIsr()
     {
         EPinState nPin = (EPinState)digitalRead( m_nPin );
@@ -39,57 +85,35 @@ public:
         {
             case EState::eIdle:
                 if( nPin == EPinState::eBtnPress )
-                {
-                    m_state = EState::eBtn1Pressed;
-                    m_tmSingleClick.UpdateAll();
-                }
+                    SetStateBtnPressed();
                 break;
 
-            case EState::eBtn1Pressed:
+            case EState::eBtnPressed:
                 if( nPin == EPinState::eBtnRelease )
                 {
-                    m_state = EState::eBtn1Released;
-                    m_tmSingleClick.UpdateCur();
-                    m_tmLastClick.UpdateAll();  // start dbl click timer
+                    m_tmPress.UpdateCur();
+                    ulong nPressDuration = m_tmPress.Delta();
+                    if(( m_nPressCnt > 0 ) || ( nPressDuration < m_nLongClickMs ) || ( m_nLongClickMs == 0 ))
+                    {
+                        SetStateBtnReleased();
+                        // for m_nLongClickMs == 0 case, the OnShortTap() will be called from within loop()
+                    }
+                    else if(( m_nPressCnt == 0 ) && ( nPressDuration >= m_nLongClickMs ))
+                    {
+                        OnLongTap();
+                        // SetStateIdle();
+                    }
                 }
                 break;
 
-            case EState::eBtn1Released:
+            case EState::eBtnReleased:
                 if( nPin == EPinState::eBtnPress )
                 {
-                    m_state = EState::eBtn2Pressed;
+                    m_tmPress.UpdateCur();
+                    ulong nPressDuration = m_tmPress.Delta();
+                    if( nPressDuration < m_nDblClickMs )
+                        SetStateBtnPressed();
                 }
-                break;
-
-            case EState::eBtn2Pressed:
-                if( nPin == EPinState::eBtnRelease )
-                {
-                    m_state = EState::eBtn2Released;
-                }
-                break;
-
-            case EState::eBtn2Released:
-            default:
-                break;
-        }
-    }
-
-    virtual void loop()
-    {
-        m_tmLastClick.UpdateCur();
-        ulong nSingleClickDelta = m_tmSingleClick.Delta();
-        ulong nLastClickDelta = m_tmLastClick.Delta();
-        switch( m_state )
-        {
-            case EState::eBtn1Released:
-                if( nLastClickDelta > m_nDblClickMs )
-                    OnShortClick();
-                else if( nSingleClickDelta > m_nLongClickMs )
-                    OnLongClick();
-                break;
-
-            case EState::eBtn2Released:
-                OnDblClick();
                 break;
 
             default:
@@ -97,22 +121,6 @@ public:
         }
     }
 
-    virtual void OnShortClick()
-    {
-        m_state = EState::eIdle;
-    }
-
-    virtual void OnLongClick()
-    {
-        m_state = EState::eIdle;
-    }
-
-    virtual void OnDblClick()
-    {
-        m_state = EState::eIdle;
-    }
-
-protected:
     static void ICACHE_RAM_ATTR Isr( CTouchBtn* a_pThis )
     {
         a_pThis->OnIsr();
@@ -124,18 +132,17 @@ protected:
         eBtnPress = HIGH,   // rising edge -> btn press
     };
 
+    // @todo: digitize and upload state machine
     enum class EState
     {
         eIdle,
-        eBtn1Pressed,
-        eBtn1Released,
-        eBtn2Pressed,
-        eBtn2Released,
+        eBtnPressed,
+        eBtnReleased,
         eDisabled,
     };
     EState m_state;
 
     uint8_t m_nPin;
-    uint16_t m_nLongClickMs, m_nDblClickMs;
-    CTimer m_tmSingleClick, m_tmLastClick;
+    uint16_t m_nLongClickMs, m_nDblClickMs, m_nPressCnt;
+    CTimer m_tmPress;
 };
