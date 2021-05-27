@@ -104,16 +104,39 @@ void CMqtt::loop()
 
 void CMqtt::MqttCb( char* topic, byte* payload, uint len )
 {
+    // Copy the buf for processing in all channels.
+    // The PubSubClient implementation does use a single buffer for rx/tx.
+    // In case multiple channels are executing (i.e. on a device private topic),
+    // the mqtt status sent by one channel (tx) will overwrite the payload before the next channel executes (rx).
+    byte* pBuf = m_pPayloadBuf;
+    if( m_nPayloadBufLen < len )
+    {
+        byte* pNewBuf = (byte*)realloc( m_pPayloadBuf, len );
+        if( pNewBuf )
+        {
+            pBuf = m_pPayloadBuf = pNewBuf;
+            m_nPayloadBufLen = len;
+        }
+        else
+        {
+            pBuf = payload;
+        }
+    }
+    if( pBuf != payload )
+    {
+        memcpy( pBuf, payload, len );
+    }
+
     DBGLOG1( "Rcvd topic %s: '", topic );
     for( uint i = 0; i < len; i++ )
     {
-        DBGLOG1( "%c", (char)payload[ i ]);
+        DBGLOG1( "%c", (char)pBuf[ i ]);
     }
     DBGLOG( '\'' );
 
     if( m_strSubTopicCmd == topic )
     {
-        if( StringEq( MQTT_CMD_RESET, MQTT_CMD_RESET_LEN, payload, len ))
+        if( StringEq( MQTT_CMD_RESET, MQTT_CMD_RESET_LEN, pBuf, len ))
         {
             DBGLOG( "reset" );
             Disable();
@@ -123,9 +146,9 @@ void CMqtt::MqttCb( char* topic, byte* payload, uint len )
     }
     else if( m_strPubSubTopicPriv == topic )
     {
-        g_swChan0.OnMqttBeacon( payload, len );
-        g_swChan1.OnMqttBeacon( payload, len );
-        g_swChan2.OnMqttBeacon( payload, len );
+        g_swChan0.OnMqttBeacon( pBuf, len );
+        g_swChan1.OnMqttBeacon( pBuf, len );
+        g_swChan2.OnMqttBeacon( pBuf, len );
     }
 
     CManualSwitch* pms = nullptr;
@@ -144,8 +167,8 @@ void CMqtt::MqttCb( char* topic, byte* payload, uint len )
 
     if( pms )
     {
-        if(( StringEq( MQTT_CMD_CH_ON, MQTT_CMD_CH_ON_LEN, payload, len ))
-            || ( StringEq( MQTT_CMD_CH_OFF, MQTT_CMD_CH_OFF_LEN, payload, len )))
+        if(( StringEq( MQTT_CMD_CH_ON, MQTT_CMD_CH_ON_LEN, pBuf, len ))
+            || ( StringEq( MQTT_CMD_CH_OFF, MQTT_CMD_CH_OFF_LEN, pBuf, len )))
         {
             pms->OnShortTap( 1 );
         }

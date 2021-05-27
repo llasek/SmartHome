@@ -42,7 +42,7 @@
 class CMqtt
 {
 public:
-    CMqtt() : m_mqtt( m_wc ), m_bEnabled( false ) {}
+    CMqtt() : m_mqtt( m_wc ), m_bEnabled( false ), m_pPayloadBuf( nullptr ), m_nPayloadBufLen( 0 ) {}
 
     void ReadCfg();
 
@@ -66,6 +66,8 @@ protected:
     PubSubClient m_mqtt;
     bool m_bEnabled;
     CTimer m_tmHeartbeat;
+    byte* m_pPayloadBuf;
+    uint m_nPayloadBufLen;
 
     // cfg:
     String m_strServer, m_strClientId;

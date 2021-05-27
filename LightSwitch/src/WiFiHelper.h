@@ -25,6 +25,8 @@ class CWiFiHelper : public CWiFiHelperBase
 public:
     void ReadCfg();
 
+    String& GetHostName();
+
     void Enable();
 
     virtual void OnConnect();

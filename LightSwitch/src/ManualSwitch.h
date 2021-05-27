@@ -14,10 +14,10 @@
 
 /**
  * sw_cfg file:
- * 1: switch channel 0: mode: 0:disabled, 1:enabled, 2:phantom  // @todo: send short tap beacon
- * 2: switch channel 0: long click ms, 0 = disabled
- * 3: switch channel 0: dbl click ms, 0 = disabled
- * 4: switch channel 0: mqtt long tap beacon
+ * 1: switch channel 0: mode: 0:disabled, 1:enabled, 2:phantom
+ * 2: switch channel 0: long tap ms, 0 = disabled
+ * 3: switch channel 0: dbl tap ms, 0 = disabled
+ * 4: switch channel 0: mqtt tap beacon
  * 5..8: switch channel 1
  * 9..12: switch channel 2
  */
@@ -32,6 +32,10 @@
 #define SW_CHANNEL_2    '2'
 #define SW_CHANNEL_NA   0
 #define SW_CHANNELS     3
+
+// tap beacon format is: <beacon><cmd L:long><src channel #><src hostname>
+#define SW_TAP_BEACON_CMD_IGNORE    0
+#define SW_TAP_BEACON_CMD_LONG      'L'
 
 class CManualSwitch : public CTouchBtn
 {
@@ -56,14 +60,16 @@ public:
     char GetChanNo();
 
 protected:
+    String GetTapBeacon( const char a_nTapCmd );
+    byte GetTapBeaconCmd( byte* payload, uint len );
+
     uint8_t m_nPinSwitch, m_nPinSwitchVal;
     CTimer m_tmAutoOff;
     ulong m_nAutoOff;
 
     // cfg:
     uint8_t m_nMode;
-    uint16_t m_nLongClickMs, m_nDblClickMs;
-    String m_strLongTapBeacon;
+    String m_strTapBeacon;
 
     static uint8_t Sm_arrPinIn[ SW_CHANNELS ];
     static uint8_t Sm_arrPinOut[ SW_CHANNELS ];

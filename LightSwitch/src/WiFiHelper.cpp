@@ -3,7 +3,6 @@
  * WIFI helper class
  * 2021 Łukasz Łasek
  */
-#pragma once
 #include "WiFiHelper.h"
 
 void CWiFiHelper::ReadCfg()
@@ -25,6 +24,11 @@ void CWiFiHelper::ReadCfg()
     {
         DBGLOG( "wifi cfg missing" );
     }
+}
+
+String& CWiFiHelper::GetHostName()
+{
+    return m_strHostname;
 }
 
 void CWiFiHelper::Enable()

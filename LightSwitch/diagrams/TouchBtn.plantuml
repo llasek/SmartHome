@@ -1,0 +1,23 @@
+@startuml
+
+[*] --> Idle
+
+Idle : cnt = 0
+Idle --> BtnPressed : Button press
+
+BtnPressed : timer.start
+BtnPressed --> BtnReleased : Button release \n and \n (cnt > 0 \n or \n timer.delta < LongTap)
+BtnPressed --> LongTap : cnt == 0 \n and \n timer.delta >= LongTap
+
+BtnReleased : cnt++
+BtnReleased : timer.start
+BtnReleased --> BtnPressed : Button press \n and \n timer.delta < DoubleTap
+BtnReleased --> ShortTap : timer.delta >= DoubleTap
+
+ShortTap : callback( cnt )
+ShortTap --> Idle
+
+LongTap : callback
+LongTap -> Idle
+
+@enduml

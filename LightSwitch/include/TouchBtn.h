@@ -11,11 +11,11 @@ class CTouchBtn
 public:
     CTouchBtn() { m_state = EState::eDisabled; }
 
-    void Enable( uint8_t a_nPin, uint16_t a_nLongClickMs, uint16_t a_nDblClickMs )
+    void Enable( uint8_t a_nPin, uint16_t a_nLongTapMs, uint16_t a_nDblTapMs )
     {
         SetStateIdle();
-        m_nLongClickMs = a_nLongClickMs;
-        m_nDblClickMs = a_nDblClickMs;
+        m_nLongTapMs = a_nLongTapMs;
+        m_nDblTapMs = a_nDblTapMs;
         m_nPin = digitalPinToInterrupt( a_nPin );
         pinMode( m_nPin, INPUT );
         attachInterruptArg( m_nPin, reinterpret_cast< void (*)( void* )>( Isr ), this, CHANGE );
@@ -39,7 +39,7 @@ public:
         {
             m_tmPress.UpdateCur();
             ulong nPressDuration = m_tmPress.Delta();
-            if( nPressDuration >= m_nDblClickMs )
+            if( nPressDuration >= m_nDblTapMs )
             {
                 OnShortTap( m_nPressCnt );
                 // SetStateIdle();
@@ -93,12 +93,12 @@ protected:
                 {
                     m_tmPress.UpdateCur();
                     ulong nPressDuration = m_tmPress.Delta();
-                    if(( m_nPressCnt > 0 ) || ( nPressDuration < m_nLongClickMs ) || ( m_nLongClickMs == 0 ))
+                    if(( m_nPressCnt > 0 ) || ( nPressDuration < m_nLongTapMs ) || ( m_nLongTapMs == 0 ))
                     {
                         SetStateBtnReleased();
-                        // for m_nLongClickMs == 0 case, the OnShortTap() will be called from within loop()
+                        // for m_nLongTapMs == 0 case, the OnShortTap() will be called from within loop()
                     }
-                    else if(( m_nPressCnt == 0 ) && ( nPressDuration >= m_nLongClickMs ))
+                    else if(( m_nPressCnt == 0 ) && ( nPressDuration >= m_nLongTapMs ))
                     {
                         OnLongTap();
                         // SetStateIdle();
@@ -111,7 +111,7 @@ protected:
                 {
                     m_tmPress.UpdateCur();
                     ulong nPressDuration = m_tmPress.Delta();
-                    if( nPressDuration < m_nDblClickMs )
+                    if( nPressDuration < m_nDblTapMs )
                         SetStateBtnPressed();
                 }
                 break;
@@ -132,7 +132,6 @@ protected:
         eBtnPress = HIGH,   // rising edge -> btn press
     };
 
-    // @todo: digitize and upload state machine
     enum class EState
     {
         eIdle,
@@ -143,6 +142,6 @@ protected:
     EState m_state;
 
     uint8_t m_nPin;
-    uint16_t m_nLongClickMs, m_nDblClickMs, m_nPressCnt;
+    uint16_t m_nLongTapMs, m_nDblTapMs, m_nPressCnt;
     CTimer m_tmPress;
 };
