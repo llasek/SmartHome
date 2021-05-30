@@ -37,6 +37,12 @@
 #define MQTT_CMD_CH_OFF     "off"
 #define MQTT_CMD_CH_OFF_LEN 3
 
+#define MQTT_CMD_CH_SHORT_TAP       "taps"  // + <cnt>
+#define MQTT_CMD_CH_SHORT_TAP_LEN   4
+
+#define MQTT_CMD_CH_LONG_TAP        "tapl"  // + <cnt>
+#define MQTT_CMD_CH_LONG_TAP_LEN    4
+
 #define MQTT_TOPIC_CHANNEL  "/ch"
 
 class CMqtt
@@ -52,6 +58,7 @@ public:
     bool PubStat( char a_nChannel, bool a_bStateOn );
     bool PubPriv( const char* a_pszBeacon );
     void PubHeartbeat( bool a_bForceSend );
+    bool PubCmd( const char* a_pszPubTopic, const char* a_pszPayload );
 
     void loop();
     void MqttCb( char* topic, byte* payload, uint len );

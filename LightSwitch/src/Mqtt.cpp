@@ -82,6 +82,11 @@ void CMqtt::PubHeartbeat( bool a_bForceSend )
     }
 }
 
+bool CMqtt::PubCmd( const char* a_pszPubTopic, const char* a_pszPayload )
+{
+    return m_mqtt.publish( a_pszPubTopic, a_pszPayload );
+}
+
 void CMqtt::loop()
 {
     if( !m_bEnabled )
@@ -171,6 +176,34 @@ void CMqtt::MqttCb( char* topic, byte* payload, uint len )
             || ( StringEq( MQTT_CMD_CH_OFF, MQTT_CMD_CH_OFF_LEN, pBuf, len )))
         {
             pms->OnShortTap( 1 );
+            return;
+        }
+
+        if(( len > MQTT_CMD_CH_SHORT_TAP_LEN ) && ( !memcmp( MQTT_CMD_CH_SHORT_TAP, pBuf, MQTT_CMD_CH_SHORT_TAP_LEN )))
+        {
+            uint16_t nCnt = 0;
+            for( uint nIdx = MQTT_CMD_CH_SHORT_TAP_LEN; nIdx < len; nIdx++ )
+            {
+                byte b = pBuf[ nIdx ];
+                if(( b >= '0' ) && ( b <= '9' ))
+                {
+                    nCnt *= 10;
+                    nCnt += ( b - '0' );
+                }
+                else
+                {
+                    nCnt = 1;
+                    break;
+                }
+            }
+            pms->OnShortTap( nCnt );
+            return;
+        }
+
+        if(( len > MQTT_CMD_CH_LONG_TAP_LEN ) && ( !memcmp( MQTT_CMD_CH_LONG_TAP, pBuf, MQTT_CMD_CH_LONG_TAP_LEN )))
+        {
+            pms->OnLongTap();
+            return;
         }
     }
 }

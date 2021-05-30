@@ -14,7 +14,7 @@
 
 /**
  * sw_cfg file:
- * 1: switch channel 0: mode: 0:disabled, 1:enabled, 2:phantom
+ * 1: switch channel 0: mode: 0:disabled, 1:enabled, mqtt cmd topic:phantom
  * 2: switch channel 0: long tap ms, 0 = disabled
  * 3: switch channel 0: dbl tap ms, 0 = disabled
  * 4: switch channel 0: mqtt tap beacon
@@ -23,9 +23,12 @@
  */
 #define FS_SW_CFG       "sw_cfg"
 
+#define CFG_SW_MODE_DISABLED    "0"
+#define CFG_SW_MODE_ENABLED     "1"
+
 #define SW_MODE_DISABLED    0
 #define SW_MODE_ENABLED     1
-#define SW_MODE_PHANTOM     2   // @todo: implement
+#define SW_MODE_PHANTOM     2
 
 #define SW_CHANNEL_0    '0'
 #define SW_CHANNEL_1    '1'
@@ -56,6 +59,7 @@ public:
 
     void OnMqttBeacon( byte* payload, uint len );
     void MqttPubStat();
+    void MqttPubCmd( const char* a_pszMqttCmd, uint16_t a_nArg );
 
     char GetChanNo();
 
@@ -69,6 +73,7 @@ protected:
 
     // cfg:
     uint8_t m_nMode;
+    String m_strPhantomMqttPubTopicCmd;
     String m_strTapBeacon;
 
     static uint8_t Sm_arrPinIn[ SW_CHANNELS ];

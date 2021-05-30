@@ -30,19 +30,34 @@ void CManualSwitch::ReadCfg( File& a_rFile )
 {
     if( a_rFile )
     {
-        m_nMode = a_rFile.readStringUntil( '\n' ).toInt();
+        m_strPhantomMqttPubTopicCmd = a_rFile.readStringUntil( '\n' );
+        if( m_strPhantomMqttPubTopicCmd == CFG_SW_MODE_DISABLED )
+        {
+            m_nMode = SW_MODE_DISABLED;
+            m_strPhantomMqttPubTopicCmd.clear();
+        }
+        else if( m_strPhantomMqttPubTopicCmd == CFG_SW_MODE_ENABLED )
+        {
+            m_nMode = SW_MODE_ENABLED;
+            m_strPhantomMqttPubTopicCmd.clear();
+        }
+        else
+        {
+            m_nMode = SW_MODE_PHANTOM;
+        }
+
         m_nLongTapMs = a_rFile.readStringUntil( '\n' ).toInt();
         m_nDblTapMs = a_rFile.readStringUntil( '\n' ).toInt();
         m_strTapBeacon = a_rFile.readStringUntil( '\n' );
 
-        DBGLOG4( "sw cfg: swmod:%d long:%u dbl:%u tapbcn:'%s'\n",
-            m_nMode, m_nLongTapMs, m_nDblTapMs, m_strTapBeacon.c_str());
+        DBGLOG5( "sw cfg: swmod:%d '%s' long:%u dbl:%u tapbcn:'%s'\n",
+            m_nMode, m_strPhantomMqttPubTopicCmd.c_str(), m_nLongTapMs, m_nDblTapMs, m_strTapBeacon.c_str());
     }
     else
     {
-        m_nMode = 1;
-        m_nLongTapMs = m_nDblTapMs = 250;
-        DBGLOG( "sw cfg missing" );
+        m_nMode = SW_MODE_DISABLED;
+        m_nLongTapMs = m_nDblTapMs = 0;
+        DBGLOG( "sw cfg missing - disable" );
     }
 }
 
@@ -66,7 +81,10 @@ void CManualSwitch::Disable()
 void CManualSwitch::DriveSwitch( bool a_bStateOn )
 {
     m_nPinSwitchVal = ( a_bStateOn ) ? HIGH : LOW;
-    digitalWrite( m_nPinSwitch, m_nPinSwitchVal );
+    if( m_nMode == SW_MODE_ENABLED )
+    {
+        digitalWrite( m_nPinSwitch, m_nPinSwitchVal );
+    }
 }
 
 bool CManualSwitch::GetSwitchState()
@@ -93,28 +111,52 @@ void CManualSwitch::OnShortTap( uint16_t a_nCnt )
 {
     CTouchBtn::OnShortTap( a_nCnt );
     DBGLOG2( "short tap x%d pin#%d\n", a_nCnt, m_nPin );
-    if( a_nCnt > 1 )
+    switch( m_nMode )
     {
-        DriveSwitch( true );
-        m_nAutoOff = ((ulong)a_nCnt - 1 ) * 1000 * 60;    // wait (tap cnt - 1) minutes
-        m_tmAutoOff.UpdateAll();
+        case SW_MODE_ENABLED:
+            if( a_nCnt > 1 )
+            {
+                DriveSwitch( true );
+                m_nAutoOff = ((ulong)a_nCnt - 1 ) * 1000 * 60;    // wait (tap cnt - 1) minutes
+                m_tmAutoOff.UpdateAll();
+            }
+            else
+            {
+                DriveSwitch( !GetSwitchState());
+                m_nAutoOff = 0;
+            }
+            MqttPubStat();
+            break;
+
+        case SW_MODE_PHANTOM:
+            MqttPubCmd( MQTT_CMD_CH_SHORT_TAP, a_nCnt );
+            break;
+
+        default:
+            break;
     }
-    else
-    {
-        DriveSwitch( !GetSwitchState());
-        m_nAutoOff = 0;
-    }
-    MqttPubStat();
 }
 
 void CManualSwitch::OnLongTap()
 {
     CTouchBtn::OnLongTap();
     DBGLOG1( "long tap pin#%d\n", m_nPin );
-    DriveSwitch( !GetSwitchState());
-    m_nAutoOff = 0;
-    MqttPubStat();
-    g_mqtt.PubPriv( GetTapBeacon( SW_TAP_BEACON_CMD_LONG ).c_str());
+    switch( m_nMode )
+    {
+        case SW_MODE_ENABLED:
+            DriveSwitch( !GetSwitchState());
+            m_nAutoOff = 0;
+            MqttPubStat();
+            g_mqtt.PubPriv( GetTapBeacon( SW_TAP_BEACON_CMD_LONG ).c_str());
+            break;
+
+        case SW_MODE_PHANTOM:
+            MqttPubCmd( MQTT_CMD_CH_LONG_TAP, 1 );
+            break;
+
+        default:
+            break;
+    }
 }
 
 void CManualSwitch::OnMqttBeacon( byte* payload, uint len )
@@ -130,7 +172,17 @@ void CManualSwitch::OnMqttBeacon( byte* payload, uint len )
 
 void CManualSwitch::MqttPubStat()
 {
-    g_mqtt.PubStat( GetChanNo(), GetSwitchState());
+    if( m_nMode == SW_MODE_ENABLED )
+    {
+        g_mqtt.PubStat( GetChanNo(), GetSwitchState());
+    }
+}
+
+void CManualSwitch::MqttPubCmd( const char* a_pszMqttCmd, uint16_t a_nArg )
+{
+    String strCmd( a_pszMqttCmd );
+    strCmd += a_nArg;
+    g_mqtt.PubCmd( m_strPhantomMqttPubTopicCmd.c_str(), strCmd.c_str());
 }
 
 char CManualSwitch::GetChanNo()
