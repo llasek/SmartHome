@@ -1,0 +1,23 @@
+{
+	"folders": [
+		{
+			"path": "LightSwitch"
+		},
+		{
+			"path": "common"
+		}
+	],
+	"settings": {
+		"files.associations": {
+			"functional": "cpp",
+			"string": "cpp",
+			"*.tcc": "cpp",
+			"memory": "cpp",
+			"fstream": "cpp",
+			"istream": "cpp",
+			"ostream": "cpp",
+			"sstream": "cpp",
+			"streambuf": "cpp"
+		}
+	}
+}
