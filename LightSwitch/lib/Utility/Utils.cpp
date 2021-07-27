@@ -19,3 +19,10 @@ bool StringAt0( String& a_rstr, byte* payload, uint len )
     uint nStrLen = a_rstr.length();
     return(( nStrLen <= len ) && ( !memcmp( a_rstr.c_str(), payload, nStrLen )));
 }
+
+String CfgFileReadLine( File& a_rFile )
+{
+    a_rFile.readStringUntil( '\n' );
+    a_rFile.readStringUntil( '\n' );
+    return a_rFile.readStringUntil( '\n' );
+}

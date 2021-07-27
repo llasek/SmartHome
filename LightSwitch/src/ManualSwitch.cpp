@@ -30,7 +30,7 @@ void CManualSwitch::ReadCfg( File& a_rFile )
 {
     if( a_rFile )
     {
-        m_strPhantomMqttPubTopicCmd = a_rFile.readStringUntil( '\n' );
+        m_strPhantomMqttPubTopicCmd = CfgFileReadLine( a_rFile );
         if( m_strPhantomMqttPubTopicCmd == CFG_SW_MODE_DISABLED )
         {
             m_nMode = SW_MODE_DISABLED;
@@ -46,12 +46,14 @@ void CManualSwitch::ReadCfg( File& a_rFile )
             m_nMode = SW_MODE_PHANTOM;
         }
 
-        m_nLongTapMs = a_rFile.readStringUntil( '\n' ).toInt();
-        m_nDblTapMs = a_rFile.readStringUntil( '\n' ).toInt();
-        m_strTapBeacon = a_rFile.readStringUntil( '\n' );
+        m_nLongTapMs = CfgFileReadLine( a_rFile ).toInt();
+        m_nDblTapMs = CfgFileReadLine( a_rFile ).toInt();
+        m_strName = CfgFileReadLine( a_rFile );
 
-        DBGLOG5( "sw cfg: swmod:%d '%s' long:%u dbl:%u tapbcn:'%s'\n",
-            m_nMode, m_strPhantomMqttPubTopicCmd.c_str(), m_nLongTapMs, m_nDblTapMs, m_strTapBeacon.c_str());
+        CfgFileReadLine( a_rFile );  // empty double line
+
+        DBGLOG5( "sw cfg: swmod:%d '%s' long:%u dbl:%u name:'%s'\n",
+            m_nMode, m_strPhantomMqttPubTopicCmd.c_str(), m_nLongTapMs, m_nDblTapMs, m_strName.c_str());
     }
     else
     {
@@ -204,15 +206,15 @@ char CManualSwitch::GetChanNo()
 // tap beacon format is: <beacon><cmd L:long><src channel #><src hostname>
 String CManualSwitch::GetTapBeacon( const char a_nTapCmd )
 {
-    return( m_strTapBeacon + a_nTapCmd + GetChanNo() + g_wifi.GetHostName());
+    return( m_strName + a_nTapCmd + GetChanNo() + g_wifi.GetHostName());
 }
 
 byte CManualSwitch::GetTapBeaconCmd( byte* payload, uint len )
 {
-    if(( len > 0 ) && ( StringAt0( m_strTapBeacon, payload, len )))
+    if(( len > 0 ) && ( StringAt0( m_strName, payload, len )))
     {
-        payload += m_strTapBeacon.length();
-        len -= m_strTapBeacon.length();
+        payload += m_strName.length();
+        len -= m_strName.length();
         if( len > 2 )
         {
             byte nTapCmd = *(payload++);

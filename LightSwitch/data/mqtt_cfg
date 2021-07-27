@@ -1,8 +1,24 @@
+// mqtt_cfg file
+// mqtt server: hostname or ip:
 openhabian
+
+// mqtt port:
 1883
+
+// mqtt server conn timeout ms:
 10
+
+// mqtt heartbeat interval ms, 0:disable:
 60000
+
+// mqtt client id:
 sw_testbed
+
+// mqtt sub topic: device and channel command
 sw/cmd/testbed
+
+// mqtt pub topic: device and channel status
 sw/stat/testbed
+
+// mqtt pub/sub topic: device private (for e.g. tap beacons)
 sw/prv/hometstbd

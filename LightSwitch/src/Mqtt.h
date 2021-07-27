@@ -12,17 +12,6 @@
 #include "Timer.h"
 #include "dbg.h"
 
-/**
- * mqtt_cfg file:
- * 1: mqtt server: hostname or ip
- * 2: mqtt port
- * 3: mqtt server conn timeout ms
- * 4: mqtt heartbeat interval ms    (0: disable heartbeat)
- * 5: mqtt client id
- * 6: mqtt sub topic: device and channel command
- * 7: mqtt pub topic: device and channel status
- * 8: mqtt pub/sub topic: device private (for e.g. tap beacons)
- */
 #define FS_MQTT_CFG     "mqtt_cfg"
 
 #define MQTT_STAT_ONLINE    "online"

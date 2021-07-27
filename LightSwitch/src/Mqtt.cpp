@@ -16,14 +16,14 @@ void CMqtt::ReadCfg()
     File file = LittleFS.open( FS_MQTT_CFG, "r" );
     if( file )
     {
-        m_strServer = file.readStringUntil( '\n' );
-        m_nPort = file.readStringUntil( '\n' ).toInt();
-        m_nConnTimeout = file.readStringUntil( '\n' ).toInt();
-        m_nHeartbeatIntvl = file.readStringUntil( '\n' ).toInt();
-        m_strClientId = file.readStringUntil( '\n' );
-        m_strSubTopicCmd = file.readStringUntil( '\n' );
-        m_strPubTopicStat = file.readStringUntil( '\n' );
-        m_strPubSubTopicPriv = file.readStringUntil( '\n' );
+        m_strServer = CfgFileReadLine( file );
+        m_nPort = CfgFileReadLine( file ).toInt();
+        m_nConnTimeout = CfgFileReadLine( file ).toInt();
+        m_nHeartbeatIntvl = CfgFileReadLine( file ).toInt();
+        m_strClientId = CfgFileReadLine( file );
+        m_strSubTopicCmd = CfgFileReadLine( file );
+        m_strPubTopicStat = CfgFileReadLine( file );
+        m_strPubSubTopicPriv = CfgFileReadLine( file );
 
         DBGLOG5( "mqtt cfg: server:'%s' port:%u timeo:%u heartbeat:%u client-id:'%s' ",
             m_strServer.c_str(), m_nPort, m_nConnTimeout, m_nHeartbeatIntvl, m_strClientId.c_str());

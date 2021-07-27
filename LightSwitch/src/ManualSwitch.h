@@ -12,15 +12,6 @@
 #include "Utils.h"
 #include "dbg.h"
 
-/**
- * sw_cfg file:
- * 1: switch channel 0: mode: 0:disabled, 1:enabled, mqtt cmd topic:phantom
- * 2: switch channel 0: long tap ms, 0 = disabled
- * 3: switch channel 0: dbl tap ms, 0 = disabled
- * 4: switch channel 0: mqtt tap beacon
- * 5..8: switch channel 1
- * 9..12: switch channel 2
- */
 #define FS_SW_CFG       "sw_cfg"
 
 #define CFG_SW_MODE_DISABLED    "0"
@@ -74,7 +65,7 @@ protected:
     // cfg:
     uint8_t m_nMode;
     String m_strPhantomMqttPubTopicCmd;
-    String m_strTapBeacon;
+    String m_strName;
 
     static uint8_t Sm_arrPinIn[ SW_CHANNELS ];
     static uint8_t Sm_arrPinOut[ SW_CHANNELS ];

@@ -4,16 +4,17 @@
  * 2021 Łukasz Łasek
  */
 #include "WiFiHelper.h"
+#include "Utils.h"
 
 void CWiFiHelper::ReadCfg()
 {
     File file = LittleFS.open( FS_WIFI_CFG, "r" );
     if( file )
     {
-        m_strSsid = file.readStringUntil( '\n' );
-        m_strPwd = file.readStringUntil( '\n' );
-        m_nConnTimeout = file.readStringUntil( '\n' ).toInt();
-        m_strHostname = file.readStringUntil( '\n' );
+        m_strSsid = CfgFileReadLine( file );
+        m_strPwd = CfgFileReadLine( file );
+        m_nConnTimeout = CfgFileReadLine( file ).toInt();
+        m_strHostname = CfgFileReadLine( file );
         file.close();
 
         DBGLOG4( "wifi cfg: ssid:'%s' pwd:'%s' timeo:%lus hostname:'%s'\n",
