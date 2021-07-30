@@ -11,23 +11,69 @@
 #include "WiFiHelperBase.h"
 #include "dbg.h"
 
+
+
+/// Configuration file
 #define FS_WIFI_CFG     "wifi_cfg"
 
+
+
+/**
+ * WIFI connection helper class.
+ * 
+ * Read the config file.
+ * Enable the WIFI, configure host name.
+ * Enable OTA FWU on WIFI connect.
+ * Reconnect on WIFI disconnect.
+ */
 class CWiFiHelper : public CWiFiHelperBase
 {
 public:
+    /**
+     * Read the configuration file.
+     */
     void ReadCfg();
 
+
+
+    /**
+     * Return the configured host name.
+     * 
+     * @return  Configured host hame.
+     */
     String& GetHostName();
 
+
+
+    /**
+     * Configure and enable WIFI in STA mode.
+     */
     void Enable();
 
+
+
+    /**
+     * WIFI connected callback.
+     */
     virtual void OnConnect();
+
+    /**
+     * WIFI disconnected callback.
+     */
     virtual void OnDisconnect();
 
+
+
+    /**
+     * Main loop function.
+     * 
+     * Execute OTA FWU.
+     */
     void loop();
 
 protected:
-    String m_strSsid, m_strPwd, m_strHostname;
-    ulong m_nConnTimeout;
+    String m_strSsid;       ///< Configured WIFI SSID
+    String m_strPwd;        ///< Configured WIFI password
+    String m_strHostname;   ///< Configured host name
+    ulong m_nConnTimeout;   ///< Configured WIFI connection timeout for MCU reset, 0:disable
 };

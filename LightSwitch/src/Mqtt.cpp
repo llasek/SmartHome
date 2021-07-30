@@ -64,15 +64,15 @@ bool CMqtt::PubStat( char a_nChannel, bool a_bStateOn )
     return PubStat( a_nChannel, ( a_bStateOn ) ? MQTT_CMD_CH_ON : MQTT_CMD_CH_OFF );
 }
 
-bool CMqtt::PubPriv( const char* a_pszBeacon )
+bool CMqtt::PubPriv( const char* a_pszMsg )
 {
-    return m_mqtt.publish( m_strPubSubTopicPriv.c_str(), a_pszBeacon );
+    return m_mqtt.publish( m_strPubSubTopicPriv.c_str(), a_pszMsg );
 }
 
 void CMqtt::PubHeartbeat( bool a_bForceSend )
 {
     m_tmHeartbeat.UpdateCur();
-    if((( m_nHeartbeatIntvl > 0 ) && ( a_bForceSend )) || ( m_tmHeartbeat.Delta() >= m_nHeartbeatIntvl ))
+    if((( m_nHeartbeatIntvl > 0 ) && ( m_tmHeartbeat.Delta() >= m_nHeartbeatIntvl )) || ( a_bForceSend ))
     {
         PubStat( MQTT_STAT_ONLINE );
         m_tmHeartbeat.UpdateLast();
@@ -82,7 +82,7 @@ void CMqtt::PubHeartbeat( bool a_bForceSend )
     }
 }
 
-bool CMqtt::PubCmd( const char* a_pszPubTopic, const char* a_pszPayload )
+bool CMqtt::PubMsg( const char* a_pszPubTopic, const char* a_pszPayload )
 {
     return m_mqtt.publish( a_pszPubTopic, a_pszPayload );
 }

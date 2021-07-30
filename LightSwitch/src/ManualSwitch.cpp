@@ -30,16 +30,16 @@ void CManualSwitch::ReadCfg( File& a_rFile )
 {
     if( a_rFile )
     {
-        m_strPhantomMqttPubTopicCmd = CfgFileReadLine( a_rFile );
-        if( m_strPhantomMqttPubTopicCmd == CFG_SW_MODE_DISABLED )
+        m_strPhantomMqttPubTopic = CfgFileReadLine( a_rFile );
+        if( m_strPhantomMqttPubTopic == CFG_SW_MODE_DISABLED )
         {
             m_nMode = SW_MODE_DISABLED;
-            m_strPhantomMqttPubTopicCmd.clear();
+            m_strPhantomMqttPubTopic.clear();
         }
-        else if( m_strPhantomMqttPubTopicCmd == CFG_SW_MODE_ENABLED )
+        else if( m_strPhantomMqttPubTopic == CFG_SW_MODE_ENABLED )
         {
             m_nMode = SW_MODE_ENABLED;
-            m_strPhantomMqttPubTopicCmd.clear();
+            m_strPhantomMqttPubTopic.clear();
         }
         else
         {
@@ -48,12 +48,12 @@ void CManualSwitch::ReadCfg( File& a_rFile )
 
         m_nLongTapMs = CfgFileReadLine( a_rFile ).toInt();
         m_nDblTapMs = CfgFileReadLine( a_rFile ).toInt();
-        m_strName = CfgFileReadLine( a_rFile );
+        m_strGroupName = CfgFileReadLine( a_rFile );
 
-        CfgFileReadLine( a_rFile );  // empty double line
+        CfgFileReadLine( a_rFile );  // separator - empty double line
 
-        DBGLOG5( "sw cfg: swmod:%d '%s' long:%u dbl:%u name:'%s'\n",
-            m_nMode, m_strPhantomMqttPubTopicCmd.c_str(), m_nLongTapMs, m_nDblTapMs, m_strName.c_str());
+        DBGLOG5( "sw cfg: swmod:%d '%s' long:%u dbl:%u group:'%s'\n",
+            m_nMode, m_strPhantomMqttPubTopic.c_str(), m_nLongTapMs, m_nDblTapMs, m_strGroupName.c_str());
     }
     else
     {
@@ -131,7 +131,7 @@ void CManualSwitch::OnShortTap( uint16_t a_nCnt )
             break;
 
         case SW_MODE_PHANTOM:
-            MqttPubCmd( MQTT_CMD_CH_SHORT_TAP, a_nCnt );
+            MqttSendPhantomCmd( MQTT_CMD_CH_SHORT_TAP, a_nCnt );
             break;
 
         default:
@@ -153,7 +153,7 @@ void CManualSwitch::OnLongTap()
             break;
 
         case SW_MODE_PHANTOM:
-            MqttPubCmd( MQTT_CMD_CH_LONG_TAP, 1 );
+            MqttSendPhantomCmd( MQTT_CMD_CH_LONG_TAP, 1 );
             break;
 
         default:
@@ -180,11 +180,11 @@ void CManualSwitch::MqttPubStat()
     }
 }
 
-void CManualSwitch::MqttPubCmd( const char* a_pszMqttCmd, uint16_t a_nArg )
+void CManualSwitch::MqttSendPhantomCmd( const char* a_pszMqttCmd, uint16_t a_nArg )
 {
     String strCmd( a_pszMqttCmd );
     strCmd += a_nArg;
-    g_mqtt.PubCmd( m_strPhantomMqttPubTopicCmd.c_str(), strCmd.c_str());
+    g_mqtt.PubMsg( m_strPhantomMqttPubTopic.c_str(), strCmd.c_str());
 }
 
 char CManualSwitch::GetChanNo()
@@ -203,18 +203,18 @@ char CManualSwitch::GetChanNo()
     return SW_CHANNEL_NA;
 }
 
-// tap beacon format is: <beacon><cmd L:long><src channel #><src hostname>
+// tap beacon format is: <name><cmd L:long><src channel #><src hostname>
 String CManualSwitch::GetTapBeacon( const char a_nTapCmd )
 {
-    return( m_strName + a_nTapCmd + GetChanNo() + g_wifi.GetHostName());
+    return( m_strGroupName + a_nTapCmd + GetChanNo() + g_wifi.GetHostName());
 }
 
 byte CManualSwitch::GetTapBeaconCmd( byte* payload, uint len )
 {
-    if(( len > 0 ) && ( StringAt0( m_strName, payload, len )))
+    if(( len > 0 ) && ( StringBeginsWith( m_strGroupName, payload, len )))
     {
-        payload += m_strName.length();
-        len -= m_strName.length();
+        payload += m_strGroupName.length();
+        len -= m_strGroupName.length();
         if( len > 2 )
         {
             byte nTapCmd = *(payload++);

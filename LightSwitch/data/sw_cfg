@@ -8,8 +8,8 @@ sw/cmd/testbed/ch2
 // switch ch0 dbl tap ms, 0:disabled:
 151
 
-// switch ch0 name/mqtt tab beacon:
-light1
+// switch ch0 group name/mqtt tab beacon:
+homelight1
 
 
 
@@ -23,8 +23,8 @@ light1
 // switch ch1 dbl tap ms, 0:disabled:
 201
 
-// switch ch1 name/mqtt tab beacon:
-light2
+// switch ch1 group name/mqtt tab beacon:
+homelight1
 
 
 
@@ -38,5 +38,5 @@ light2
 // switch ch2 dbl tap ms, 0:disabled:
 251
 
-// switch ch2 name/mqtt tab beacon:
-light1
+// switch ch2 group name/mqtt tab beacon:
+homelight1

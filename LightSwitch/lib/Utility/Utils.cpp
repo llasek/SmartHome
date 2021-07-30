@@ -14,10 +14,10 @@ bool StringEq( String& a_rstr, byte* payload, uint len )
     return StringEq( a_rstr.c_str(), a_rstr.length(), payload, len );
 }
 
-bool StringAt0( String& a_rstr, byte* payload, uint len )
+bool StringBeginsWith( String& a_rstrPrefix, byte* payload, uint len )
 {
-    uint nStrLen = a_rstr.length();
-    return(( nStrLen <= len ) && ( !memcmp( a_rstr.c_str(), payload, nStrLen )));
+    uint nStrLen = a_rstrPrefix.length();
+    return(( nStrLen <= len ) && ( !memcmp( a_rstrPrefix.c_str(), payload, nStrLen )));
 }
 
 String CfgFileReadLine( File& a_rFile )

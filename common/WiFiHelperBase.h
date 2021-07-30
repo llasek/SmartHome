@@ -8,17 +8,33 @@
 #include "Timer.h"
 #include "dbg.h"
 
+/**
+ * WIFI helper base class
+ * 
+ * Manage WIFI connection in the STA mode.
+ * Issue callbacks on WIFI connection/disconnection events.
+ * Issue the MCU reset on WIFI connection timeout.
+ */
 class CWiFiHelperBase
 {
 public:
     CWiFiHelperBase() {}
 
+    /**
+     * Initialize the instance
+     * 
+     * @param[in]   a_pszSsid       WIFI SSID to connect to
+     * @param[in]   a_pszPwd        WIFI password
+     * @param[in]   a_nConnTimeout  WIFI connection timeout or 0:disable timeout.
+     *                              Timeout will result in MCU reset if enabled
+     */
     void Init( const char* a_pszSsid, const char* a_pszPwd, ulong a_nConnTimeout = 0 )
     {
         m_pszSsid = a_pszSsid;
         m_pszPwd = a_pszPwd;
         m_nConnTimeout = a_nConnTimeout;
 
+        // Configure WIFI callbacks to track and manage the WIFI connection:
         m_evtConn = WiFi.onStationModeConnected(
             [ this ]( const WiFiEventStationModeConnected& arg )
             {
@@ -49,6 +65,11 @@ public:
         m_tm.UpdateAll();
     }
 
+    /**
+     * Setup the STA mode and start a WIFI connection
+     * 
+     * @param[in]   a_pszHostname   Self DNS host name
+     */
     void SetupSta( const char* a_pszHostname = nullptr )
     {
         DBGLOG( "Wifi STA setup" );
@@ -59,9 +80,21 @@ public:
         WiFi.begin( m_pszSsid, m_pszPwd );
     }
 
+    /**
+     * WIFI connected callback
+     */
     virtual void OnConnect() {}
+
+    /**
+     * WIFI disconnected callback
+     */
     virtual void OnDisconnect() {}
 
+    /**
+     * Test for the WIFI connection, track connection timeout and issue MCU reset
+     * 
+     * @return  true if WIFI is connected
+     */
     bool Connected()
     {
         m_tm.UpdateCur();
@@ -81,11 +114,13 @@ public:
         return false;
     }
 
+
+
 private:
-    bool m_bConn;
-    ulong m_nConnTimeout;
-    CTimer m_tm;
-    const char* m_pszSsid;
-    const char* m_pszPwd;
-    WiFiEventHandler m_evtConn, m_evtDisconn, m_evtGotIp, m_evtDhcpTimeout;
+    bool m_bConn;           ///< Tracks current status of WIFI connection - true when connected
+    ulong m_nConnTimeout;   ///< Configured WIFI connection timeout
+    CTimer m_tm;            ///< Tracks WIFI connection timeout
+    const char* m_pszSsid;  ///< Configured WIFI SSID
+    const char* m_pszPwd;   ///< Configured WIFI password
+    WiFiEventHandler m_evtConn, m_evtDisconn, m_evtGotIp, m_evtDhcpTimeout; ///< Internal WIFI events
 };

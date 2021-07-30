@@ -16,6 +16,9 @@ CManualSwitch g_swChan0;
 CManualSwitch g_swChan1;
 CManualSwitch g_swChan2;
 
+/**
+ * Enable all switches and MQTT client
+ */
 void EnableAll()
 {
     DBGLOG( "Enable btns" );
@@ -25,6 +28,9 @@ void EnableAll()
     g_swChan2.Enable( 2 );
 }
 
+/**
+ * Disable all switches and MQTT client
+ */
 void DisableAll()
 {
     DBGLOG( "Disable btns" );
@@ -34,10 +40,15 @@ void DisableAll()
     g_mqtt.Disable();
 }
 
+/**
+ * Setup the MCU
+ */
 void setup()
 {
+    // Setup debug log:
     DbgLogSetup();
 
+    // Read all cfg files:
     if( LittleFS.begin())
     {
         File file = CManualSwitch::OpenCfg();
@@ -59,8 +70,10 @@ void setup()
         DBGLOG( "FS failed" );
     }
 
+    // Enable all buttons and MQTT client:
     EnableAll();
 
+    // Enable OTA FWU:
     ArduinoOTA.onStart(
         []()
         {
@@ -84,13 +97,20 @@ void setup()
         });
 }
 
+/**
+ * Main FW loop
+ */
 void loop()
 {
+    // Handle all the network services if connected.
+    // Note this may reset the MCU if WIFI conn timeout was configured:
     if( g_wifi.Connected())
     {
         g_wifi.loop();
         g_mqtt.loop();
     }
+
+    // Handle all switches:
     g_swChan0.loop();
     g_swChan1.loop();
     g_swChan2.loop();
