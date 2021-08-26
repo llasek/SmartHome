@@ -23,12 +23,12 @@ void CMqtt::ReadCfg()
         m_strClientId = CfgFileReadLine( file );
         m_strSubTopicCmd = CfgFileReadLine( file );
         m_strPubTopicStat = CfgFileReadLine( file );
-        m_strPubSubTopicPriv = CfgFileReadLine( file );
+        m_strPubSubTopicGrp = CfgFileReadLine( file );
 
         DBGLOG5( "mqtt cfg: server:'%s' port:%u timeo:%u heartbeat:%u client-id:'%s' ",
             m_strServer.c_str(), m_nPort, m_nConnTimeout, m_nHeartbeatIntvl, m_strClientId.c_str());
-        DBGLOG3( "cmd-sub:'%s' stat-pub:'%s', prv:'%s'\n",
-            m_strSubTopicCmd.c_str(), m_strPubTopicStat.c_str(), m_strPubSubTopicPriv.c_str());
+        DBGLOG3( "cmd-sub:'%s' stat-pub:'%s', grp:'%s'\n",
+            m_strSubTopicCmd.c_str(), m_strPubTopicStat.c_str(), m_strPubSubTopicGrp.c_str());
     }
     else
     {
@@ -64,9 +64,9 @@ bool CMqtt::PubStat( char a_nChannel, bool a_bStateOn )
     return PubStat( a_nChannel, ( a_bStateOn ) ? MQTT_CMD_CH_ON : MQTT_CMD_CH_OFF );
 }
 
-bool CMqtt::PubPriv( const char* a_pszMsg )
+bool CMqtt::PubGroup( const char* a_pszMsg )
 {
-    return m_mqtt.publish( m_strPubSubTopicPriv.c_str(), a_pszMsg );
+    return m_mqtt.publish( m_strPubSubTopicGrp.c_str(), a_pszMsg );
 }
 
 void CMqtt::PubHeartbeat( bool a_bForceSend )
@@ -82,11 +82,6 @@ void CMqtt::PubHeartbeat( bool a_bForceSend )
     }
 }
 
-bool CMqtt::PubMsg( const char* a_pszPubTopic, const char* a_pszPayload )
-{
-    return m_mqtt.publish( a_pszPubTopic, a_pszPayload );
-}
-
 void CMqtt::loop()
 {
     if( !m_bEnabled )
@@ -99,7 +94,7 @@ void CMqtt::loop()
         m_mqtt.subscribe(( strMqttSubTopicChan + SW_CHANNEL_0 ).c_str());
         m_mqtt.subscribe(( strMqttSubTopicChan + SW_CHANNEL_1 ).c_str());
         m_mqtt.subscribe(( strMqttSubTopicChan + SW_CHANNEL_2 ).c_str());
-        m_mqtt.subscribe( m_strPubSubTopicPriv.c_str());
+        m_mqtt.subscribe( m_strPubSubTopicGrp.c_str());
         DBGLOG( "mqtt connected" );
         PubHeartbeat( true );
     }
@@ -149,11 +144,12 @@ void CMqtt::MqttCb( char* topic, byte* payload, uint len )
         }
         return;
     }
-    else if( m_strPubSubTopicPriv == topic )
+    else if( m_strPubSubTopicGrp == topic )
     {
-        g_swChan0.OnMqttBeacon( pBuf, len );
-        g_swChan1.OnMqttBeacon( pBuf, len );
-        g_swChan2.OnMqttBeacon( pBuf, len );
+        g_swChan0.OnGroupCmd( pBuf, len );
+        g_swChan1.OnGroupCmd( pBuf, len );
+        g_swChan2.OnGroupCmd( pBuf, len );
+        return;
     }
 
     CManualSwitch* pms = nullptr;
@@ -176,34 +172,6 @@ void CMqtt::MqttCb( char* topic, byte* payload, uint len )
             || ( StringEq( MQTT_CMD_CH_OFF, MQTT_CMD_CH_OFF_LEN, pBuf, len )))
         {
             pms->OnShortTap( 1 );
-            return;
-        }
-
-        if(( len > MQTT_CMD_CH_SHORT_TAP_LEN ) && ( !memcmp( MQTT_CMD_CH_SHORT_TAP, pBuf, MQTT_CMD_CH_SHORT_TAP_LEN )))
-        {
-            uint16_t nCnt = 0;
-            for( uint nIdx = MQTT_CMD_CH_SHORT_TAP_LEN; nIdx < len; nIdx++ )
-            {
-                byte b = pBuf[ nIdx ];
-                if(( b >= '0' ) && ( b <= '9' ))
-                {
-                    nCnt *= 10;
-                    nCnt += ( b - '0' );
-                }
-                else
-                {
-                    nCnt = 1;
-                    break;
-                }
-            }
-            pms->OnShortTap( nCnt );
-            return;
-        }
-
-        if(( len > MQTT_CMD_CH_LONG_TAP_LEN ) && ( !memcmp( MQTT_CMD_CH_LONG_TAP, pBuf, MQTT_CMD_CH_LONG_TAP_LEN )))
-        {
-            pms->OnLongTap();
-            return;
         }
     }
 }

@@ -51,19 +51,37 @@
 
 
 
-/// Channel short tap cmd - payload
-#define MQTT_CMD_CH_SHORT_TAP       "taps"  // + <cnt>
-
-/// Channel short tap cmd - payload len
-#define MQTT_CMD_CH_SHORT_TAP_LEN   4
+/// Tap cmd separator character
+#define MQTT_CMD_SEPARATOR          "/"
 
 
 
-/// Channel long tap cmd - payload
-#define MQTT_CMD_CH_LONG_TAP        "tapl"  // + <cnt>
+/// Tap cmd mask length (64bit hex)
+#define MQTT_CMD_MASK_LEN           18
 
-/// Channel long tap cmd - payload len
-#define MQTT_CMD_CH_LONG_TAP_LEN    4
+
+
+/// Phantom short tap cmd - payload
+#define MQTT_CMD_PH_SHORT_TAP       "phs"  // + '/' + <mask> + '/' + <cnt>
+
+/// Phantom short tap cmd - payload len
+#define MQTT_CMD_PH_SHORT_TAP_LEN   3
+
+
+
+/// Phantom long tap cmd - payload
+#define MQTT_CMD_PH_LONG_TAP        "phl"  // + '/' + <mask> + '/' + <cnt>
+
+/// Phantom long tap cmd - payload len
+#define MQTT_CMD_PH_LONG_TAP_LEN    3
+
+
+
+/// Switch long tap cmd - payload
+#define MQTT_CMD_SW_LONG_TAP        "swl"   // + '/' + <mask> + '/' + <cnt>
+
+/// Switch long tap cmd - payload len
+#define MQTT_CMD_SW_LONG_TAP_LEN    3
 
 
 
@@ -114,13 +132,13 @@ public:
     bool PubStat( char a_nChannel, bool a_bStateOn );
 
     /**
-     * Publish a message over the device private channel.
+     * Publish a message over the device group channel.
      * 
      * @param[in]   a_pszMsg    Message to send.
      * 
      * @return  True if succesfully sent.
      */
-    bool PubPriv( const char* a_pszMsg );
+    bool PubGroup( const char* a_pszMsg );
 
     /**
      * Publish a heartbeat over the device and channels state topics.
@@ -132,16 +150,6 @@ public:
      * @param[in]   a_bForceSend    Override the heartbeat period if true.
      */
     void PubHeartbeat( bool a_bForceSend );
-
-    /**
-     * Publish a message over a specified topic.
-     * 
-     * @param[in]   a_pszPubTopic   Topic to publish the message.
-     * @param[in]   a_pszPayload    Message payload.
-     * 
-     * @return  True if succesfully sent.
-     */
-    bool PubMsg( const char* a_pszPubTopic, const char* a_pszPayload );
 
 
 
@@ -167,8 +175,8 @@ public:
      * 
      * Dispatch the command received:
      * 1. Device cmd sub topic: MQTT_CMD_RESET,
-     * 2. Device private pub sub topic: channel beacon,
-     * 3. Channel cmd sub topic: MQTT_CMD_CH_ON, MQTT_CMD_CH_OFF, MQTT_CMD_CH_SHORT_TAP (+tap count), MQTT_CMD_CH_LONG_TAP.
+     * 2. Device group pub sub topic: group cmds: MQTT_CMD_PH_SHORT_TAP, MQTT_CMD_PH_LONG_TAP, MQTT_CMD_SW_LONG_TAP
+     * 3. Channel cmd sub topic: MQTT_CMD_CH_ON, MQTT_CMD_CH_OFF.
      * 
      * @param[in]   topic       MQTT topic of the incoming cmd.
      * @param[in]   payload     Cmd payload.
@@ -231,5 +239,5 @@ protected:
     uint16_t m_nHeartbeatIntvl;     ///< Configured heartbeat interval
     String m_strSubTopicCmd;        ///< Configured device cmd subscription topic
     String m_strPubTopicStat;       ///< Configured device status publish topic
-    String m_strPubSubTopicPriv;    ///< Configured device private pub/sub topic
+    String m_strPubSubTopicGrp;     ///< Configured device group pub/sub topic
 };

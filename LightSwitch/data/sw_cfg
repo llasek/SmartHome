@@ -1,42 +1,42 @@
 // sw_cfg file
-// switch ch0 mode: 0:disabled, 1:enabled, <mqtt cmd topic>:phantom:
-sw/cmd/testbed/ch2
+// switch ch0 id: 0:disabled, 1-64:enabled, phantom:phantom:
+phantom
+
+// switch ch0 mask: enabled:long tap off mask, phantom:fwd mask
+0xf000000000000000
 
 // switch ch0 long tam ms, 0:disabled:
 150
 
 // switch ch0 dbl tap ms, 0:disabled:
-151
-
-// switch ch0 group name/mqtt tab beacon:
-homelight1
+150
 
 
 
 
-// switch ch1 mode: 0:disabled, 1:enabled, <mqtt cmd topic>:phantom:
-1
+// switch ch1 id: 0:disabled, 1-64:enabled, phantom:phantom:
+64
+
+// switch ch1 mask: enabled:long tap off mask, phantom:fwd mask
+0xf000000000000000
 
 // switch ch1 long tam ms, 0:disabled:
 200
 
 // switch ch1 dbl tap ms, 0:disabled:
-201
-
-// switch ch1 group name/mqtt tab beacon:
-homelight1
+200
 
 
 
 
-// switch ch2 mode: 0:disabled, 1:enabled, <mqtt cmd topic>:phantom:
-1
+// switch ch2 id: 0:disabled, 1-64:enabled, phantom:phantom:
+63
+
+// switch ch2 mask: enabled:long tap off mask, phantom:fwd mask
+0xf000000000000000
 
 // switch ch2 long tam ms, 0:disabled:
 250
 
 // switch ch2 dbl tap ms, 0:disabled:
-251
-
-// switch ch2 group name/mqtt tab beacon:
-homelight1
+250
