@@ -41,6 +41,46 @@ bool StringEq( String& a_rstr, byte* payload, uint len );
 bool StringBeginsWith( String& a_rstrPrefix, byte* payload, uint len );
 
 /**
+ * Check a prefix at a start of a payload buffer
+ * 
+ * @param[in]   a_psz           Prefix string
+ * @param[in]   a_nLen          Length of the prefix string
+ * @param[in]   payload         Byte buffer to begin with the prefix
+ * @param[in]   len             Lengt of payload in bytes
+ * 
+ * @return  true if payload begins with the prefix
+ */
+bool StringBeginsWith( const char* a_psz, uint a_nLen, byte* payload, uint len );
+
+/**
+ * Convert a string into a base 10 uint16
+ * 
+ * @param[in]   payload     Input string
+ * @param[in]   len         Length of the input string
+ * 
+ * @return  Base 10 uint16 value
+ */
+uint16_t AtoU16_10( byte *payload, uint len );
+
+/**
+ * Convert a nibble char (i.e. half a byte, base 16) into a value
+ * 
+ * @param[in]   a_cNibble   Input nibble character
+ * 
+ * @return  Byte value
+ */
+byte NibbleToU8_16( char a_cNibble );
+
+/**
+ * Convert a value to a nibble character
+ * 
+ * @param[in]   a_nNibble   Nibble value
+ * 
+ * @return  Nibble character
+ */
+const char U8ToNibble_16( byte a_nNibble );
+
+/**
  * Read the next value from config file.
  * 
  * The config file layout is defined to contain a value every 3 lines.

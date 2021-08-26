@@ -17,7 +17,13 @@
 			"istream": "cpp",
 			"ostream": "cpp",
 			"sstream": "cpp",
-			"streambuf": "cpp"
+			"streambuf": "cpp",
+			"deque": "cpp",
+			"list": "cpp",
+			"unordered_map": "cpp",
+			"vector": "cpp",
+			"system_error": "cpp",
+			"cinttypes": "cpp"
 		}
 	}
 }

@@ -20,5 +20,5 @@ sw/cmd/testbed
 // mqtt pub topic: device and channel status
 sw/stat/testbed
 
-// mqtt pub/sub topic: device private (for e.g. tap beacons)
-sw/prv/hometstbd
+// mqtt pub/sub topic: device group
+sw/grp/home
