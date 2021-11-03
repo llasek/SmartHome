@@ -23,15 +23,11 @@ public:
     /**
      * Initialize the instance
      * 
-     * @param[in]   a_pszSsid       WIFI SSID to connect to
-     * @param[in]   a_pszPwd        WIFI password
      * @param[in]   a_nConnTimeout  WIFI connection timeout or 0:disable timeout.
      *                              Timeout will result in MCU reset if enabled
      */
-    void Init( const char* a_pszSsid, const char* a_pszPwd, ulong a_nConnTimeout = 0 )
+    void Init( ulong a_nConnTimeout = 0 )
     {
-        m_pszSsid = a_pszSsid;
-        m_pszPwd = a_pszPwd;
         m_nConnTimeout = a_nConnTimeout;
 
         // Configure WIFI callbacks to track and manage the WIFI connection:
@@ -68,16 +64,18 @@ public:
     /**
      * Setup the STA mode and start a WIFI connection
      * 
+     * @param[in]   a_pszSsid       WIFI SSID to connect to
+     * @param[in]   a_pszPwd        WIFI password
      * @param[in]   a_pszHostname   Self DNS host name
      */
-    void SetupSta( const char* a_pszHostname = nullptr )
+    void SetupSta( const char* a_pszSsid, const char* a_pszPwd, const char* a_pszHostname = nullptr )
     {
         DBGLOG( "Wifi STA setup" );
         WiFi.disconnect();
         WiFi.mode( WIFI_STA );
         if( a_pszHostname )
             WiFi.hostname( a_pszHostname );
-        WiFi.begin( m_pszSsid, m_pszPwd );
+        WiFi.begin( a_pszSsid, a_pszPwd );
     }
 
     /**
@@ -120,7 +118,5 @@ private:
     bool m_bConn;           ///< Tracks current status of WIFI connection - true when connected
     ulong m_nConnTimeout;   ///< Configured WIFI connection timeout
     CTimer m_tm;            ///< Tracks WIFI connection timeout
-    const char* m_pszSsid;  ///< Configured WIFI SSID
-    const char* m_pszPwd;   ///< Configured WIFI password
     WiFiEventHandler m_evtConn, m_evtDisconn, m_evtGotIp, m_evtDhcpTimeout; ///< Internal WIFI events
 };

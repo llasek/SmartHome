@@ -1,12 +1,24 @@
 // wifi_cfg file
-// ssid:
-ssid
-
-// pwd:
-pwd
+// hostname:
+sw-testbed
 
 // conn timeout in sec - reset:
 600
 
-// hostname:
-sw-testbed
+
+
+
+// ssid1:
+ssid_1
+
+// pwd1:
+pwd_1
+
+
+
+
+// ssid2:
+ssid_2
+
+// pwd2:
+pwd_2

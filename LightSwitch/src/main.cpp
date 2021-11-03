@@ -58,12 +58,12 @@ void setup()
         file.close();
 
         g_wifi.ReadCfg();
-        g_wifi.Enable();
-
         g_mqtt.ReadCfg();
-        g_mqtt.Enable();
 
         LittleFS.end();
+
+        g_wifi.Enable();
+        g_mqtt.Enable();
     }
     else
     {

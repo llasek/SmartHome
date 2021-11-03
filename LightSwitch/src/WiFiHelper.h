@@ -29,10 +29,20 @@
 class CWiFiHelper : public CWiFiHelperBase
 {
 public:
+    CWiFiHelper();
+
+
+
     /**
      * Read the configuration file.
      */
     void ReadCfg();
+
+    /**
+     * Alternate between APs configured in the cfg file.
+     * Read in the SSID and PWD.
+     */
+    void AlternateCfg();
 
 
 
@@ -76,4 +86,5 @@ protected:
     String m_strPwd;        ///< Configured WIFI password
     String m_strHostname;   ///< Configured host name
     ulong m_nConnTimeout;   ///< Configured WIFI connection timeout for MCU reset, 0:disable
+    int m_nCurAP;           ///< Current WIFI AP
 };
