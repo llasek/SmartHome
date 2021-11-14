@@ -168,10 +168,13 @@ void CMqtt::MqttCb( char* topic, byte* payload, uint len )
 
     if( pms )
     {
-        if(( StringEq( MQTT_CMD_CH_ON, MQTT_CMD_CH_ON_LEN, pBuf, len ))
-            || ( StringEq( MQTT_CMD_CH_OFF, MQTT_CMD_CH_OFF_LEN, pBuf, len )))
+        if( StringEq( MQTT_CMD_CH_ON, MQTT_CMD_CH_ON_LEN, pBuf, len ))
         {
-            pms->OnShortTap( 1 );
+            pms->SetState( true, 0 );
+        }
+        else if( StringEq( MQTT_CMD_CH_OFF, MQTT_CMD_CH_OFF_LEN, pBuf, len ))
+        {
+            pms->SetState( false, 0 );
         }
     }
 }
