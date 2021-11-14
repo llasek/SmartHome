@@ -118,9 +118,7 @@ void CManualSwitch::loop()
         m_tmAutoOff.UpdateCur();
         if( m_tmAutoOff.Delta() >= m_nAutoOff )
         {
-            DriveSwitch( false );
-            m_nAutoOff = 0;
-            MqttPubStat();
+            SetState( false, 0 );
         }
     }
 }
@@ -134,16 +132,12 @@ void CManualSwitch::OnShortTap( uint16_t a_nCnt )
         case SW_MODE_ENABLED:
             if( a_nCnt > 1 )
             {
-                DriveSwitch( true );
-                m_nAutoOff = ((ulong)a_nCnt - 1 ) * 1000 * 60;    // wait (tap cnt - 1) minutes
-                m_tmAutoOff.UpdateAll();
+                SetState( true, ((ulong)a_nCnt - 1 ) * 1000 * 60 ); // wait (tap cnt - 1) minutes
             }
             else
             {
-                DriveSwitch( !GetSwitchState());
-                m_nAutoOff = 0;
+                SetState( !GetSwitchState(), 0 );
             }
-            MqttPubStat();
             break;
 
         case SW_MODE_PHANTOM:
@@ -162,9 +156,7 @@ void CManualSwitch::OnLongTap()
     switch( m_nMode )
     {
         case SW_MODE_ENABLED:
-            DriveSwitch( !GetSwitchState());
-            m_nAutoOff = 0;
-            MqttPubStat();
+            SetState( !GetSwitchState(), 0 );
             MqttSendGroupCmd( MQTT_CMD_SW_LONG_TAP, 1 );
             break;
 
@@ -175,6 +167,17 @@ void CManualSwitch::OnLongTap()
         default:
             break;
     }
+}
+
+void CManualSwitch::SetState( bool a_bStateOn, ulong a_nAutoOff )
+{
+    DriveSwitch( a_bStateOn );
+    m_nAutoOff = a_nAutoOff;
+    if( a_nAutoOff )
+    {
+        m_tmAutoOff.UpdateAll();
+    }
+    MqttPubStat();
 }
 
 void CManualSwitch::OnGroupCmd( byte* payload, uint len )
@@ -227,9 +230,7 @@ void CManualSwitch::OnGroupCmd( byte* payload, uint len )
         OnGroupMaskCmd( payload, len,
             [ this ]( const char* a_pMask, uint16_t a_nCnt )
             {
-                this->DriveSwitch( false );
-                this->m_nAutoOff = 0;
-                this->MqttPubStat();
+                this->SetState( false, 0 );
             });
     }
 }

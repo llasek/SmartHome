@@ -189,6 +189,18 @@ public:
 
 
     /**
+     * @brief Handle the received MQTT command 'ON'
+     * 
+     * In the enabled mode:
+     * 1. Set the output on/off state and configure the auto-off timer.
+     * 2. Publish the switch on/off state via MQTT pub topic.
+     * 
+     * @param[in]   a_bStateOn  The on/off state to set: true:on, false:off.
+     * @param[in]   a_nAutoOff  The auto-off timer in msec (0:disable).
+     */
+    void SetState( bool a_bStateOn, ulong a_nAutoOff );
+
+    /**
      * Handle the received MQTT group command.
      * 
      * Decode and execute the group command.
