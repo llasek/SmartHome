@@ -200,7 +200,7 @@ protected:
     /**
      * ISR stub.
      */
-    static void ICACHE_RAM_ATTR Isr( CTouchBtn* a_pThis )
+    static void IRAM_ATTR Isr( CTouchBtn* a_pThis )
     {
         a_pThis->OnIsr();
     }
