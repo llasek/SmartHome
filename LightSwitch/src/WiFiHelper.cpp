@@ -13,17 +13,21 @@ CWiFiHelper::CWiFiHelper()
 
 void CWiFiHelper::ReadCfg()
 {
+    if( m_nCurAP >= WIFI_AP_CNT )
+        return;
+
     File file = LittleFS.open( FS_WIFI_CFG, "r" );
     if( file )
     {
-        m_strHostname = CfgFileReadLine( file );
-        m_nConnTimeout = CfgFileReadLine( file ).toInt();
-        for( int nIdx = 0; nIdx <= m_nCurAP; nIdx++ )
-        {
-            CfgFileReadLine( file );
-            m_strSsid = CfgFileReadLine( file );
-            m_strPwd = CfgFileReadLine( file );
-        }
+        m_strHostname = CfgFileReadLine( file, "host" );
+        m_nConnTimeout = CfgFileReadLine( file, "conn" ).toInt();
+
+        const char* arrSsid[ WIFI_AP_CNT ] = { "ssid1", "ssid2" };
+        m_strSsid = CfgFileReadLine( file, arrSsid[ m_nCurAP ]);
+
+        const char* arrPwd[ WIFI_AP_CNT ] = { "pwd1", "pwd2" };
+        m_strPwd = CfgFileReadLine( file, arrPwd[ m_nCurAP ]);
+
         file.close();
 
         DBGLOG5( "wifi cfg %d: ssid:'%s' pwd:'%s' timeo:%lus hostname:'%s'\n",

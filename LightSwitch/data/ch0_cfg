@@ -1,0 +1,12 @@
+// ch0_cfg file
+// id: 0:disabled, 1-64:enabled, phantom:phantom:
+phantom
+
+// mask: enabled:long tap off mask, phantom:fwd mask
+0xf000000000000000
+
+// long tap ms, 0:disabled:
+150
+
+// dbl tap ms, 0:disabled:
+150

@@ -13,6 +13,7 @@
     #define DBGLOG3( fmt, arg1, arg2, arg3 ) Serial.printf( fmt, arg1, arg2, arg3 )
     #define DBGLOG4( fmt, arg1, arg2, arg3, arg4 ) Serial.printf( fmt, arg1, arg2, arg3, arg4 )
     #define DBGLOG5( fmt, arg1, arg2, arg3, arg4, arg5 ) Serial.printf( fmt, arg1, arg2, arg3, arg4, arg5 )
+    #define DBGLOG6( fmt, arg1, arg2, arg3, arg4, arg5, arg6 ) Serial.printf( fmt, arg1, arg2, arg3, arg4, arg5, arg6 )
 
 static inline void DbgLogSetup()
 {
@@ -27,6 +28,7 @@ static inline void DbgLogSetup()
     #define DBGLOG3( fmt, arg1, arg2, arg3 )
     #define DBGLOG4( fmt, arg1, arg2, arg3, arg4 )
     #define DBGLOG5( fmt, arg1, arg2, arg3, arg4, arg5 )
+    #define DBGLOG6( fmt, arg1, arg2, arg3, arg4, arg5, arg6 )
 
 static inline void DbgLogSetup()
 {
