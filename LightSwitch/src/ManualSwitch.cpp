@@ -21,17 +21,22 @@ uint8_t CManualSwitch::Sm_arrPinOut[ SW_CHANNELS ] = { PIN_OUT0, PIN_OUT1, PIN_O
 extern CWiFiHelper g_wifi;
 extern CMqtt g_mqtt;
 
-File CManualSwitch::OpenCfg()
+void CManualSwitch::ReadCfg( uint8_t a_nChanNo )
 {
-    return LittleFS.open( FS_SW_CFG, "r" );
-}
+    m_nMode = SW_MODE_DISABLED;
+    m_nLongTapMs = m_nDblTapMs = 0;
 
-void CManualSwitch::ReadCfg( File& a_rFile )
-{
-    if( a_rFile )
+    if( a_nChanNo >= SW_CHANNELS )
+        return;
+
+    m_nChanNo = a_nChanNo;
+
+    const char* arrCfgFile[ SW_CHANNELS ] = { FS_CH0_CFG, FS_CH1_CFG, FS_CH2_CFG };
+    File file = LittleFS.open( arrCfgFile[ a_nChanNo ], "r" );
+    if( file )
     {
         // Read in the mode:
-        m_strMask = CfgFileReadLine( a_rFile );
+        m_strMask = CfgFileReadLine( file, "id" );
         m_nMode = SW_MODE_DISABLED;
         if( m_strMask.length() <= 2 )
         {
@@ -46,7 +51,7 @@ void CManualSwitch::ReadCfg( File& a_rFile )
             m_nMode = SW_MODE_PHANTOM;
         }
 
-        m_strMask = CfgFileReadLine( a_rFile );
+        m_strMask = CfgFileReadLine( file, "mask" );
         if( m_strMask.length() != MQTT_CMD_MASK_LEN )
         {
             m_nMode = SW_MODE_DISABLED;
@@ -63,32 +68,27 @@ void CManualSwitch::ReadCfg( File& a_rFile )
         }
         m_strMaskCopy = m_strMask;
 
-        m_nLongTapMs = CfgFileReadLine( a_rFile ).toInt();
-        m_nDblTapMs = CfgFileReadLine( a_rFile ).toInt();
+        m_nLongTapMs = CfgFileReadLine( file, "long" ).toInt();
+        m_nDblTapMs = CfgFileReadLine( file, "dbl" ).toInt();
 
-        CfgFileReadLine( a_rFile );  // separator - empty double line
-
-        DBGLOG5( "sw cfg: swmod:%d id:%d mask:'%s' long:%u dbl:%u\n",
-            m_nMode, m_nId, m_strMask.c_str(), m_nLongTapMs, m_nDblTapMs);
+        DBGLOG6( "sw ch%d cfg: swmod:%d id:%d mask:'%s' long:%u dbl:%u\n",
+            m_nChanNo, m_nMode, m_nId, m_strMask.c_str(), m_nLongTapMs, m_nDblTapMs);
     }
     else
     {
-        m_nMode = SW_MODE_DISABLED;
-        m_nLongTapMs = m_nDblTapMs = 0;
-        DBGLOG( "sw cfg missing - disable" );
+        DBGLOG1( "sw ch%d cfg missing - disable\n", m_nChanNo );
     }
 }
 
-void CManualSwitch::Enable( uint8_t a_nChanNo )
+void CManualSwitch::Enable()
 {
-    if(( a_nChanNo >= SW_CHANNELS ) || ( m_nMode == SW_MODE_DISABLED ))
+    if( m_nMode == SW_MODE_DISABLED )
         return;
 
     m_tmAutoOff.UpdateAll();
-    m_nPinSwitch = Sm_arrPinOut[ a_nChanNo ];
-    pinMode( m_nPinSwitch, OUTPUT );
+    pinMode( Sm_arrPinOut[ m_nChanNo ], OUTPUT );
     DriveSwitch( false );
-    CTouchBtn::Enable( Sm_arrPinIn[ a_nChanNo ], m_nLongTapMs, m_nDblTapMs );   
+    CTouchBtn::Enable( Sm_arrPinIn[ m_nChanNo ], m_nLongTapMs, m_nDblTapMs );   
 }
 
 void CManualSwitch::Disable()
@@ -101,7 +101,7 @@ void CManualSwitch::DriveSwitch( bool a_bStateOn )
     m_nPinSwitchVal = ( a_bStateOn ) ? HIGH : LOW;
     if( m_nMode == SW_MODE_ENABLED )
     {
-        digitalWrite( m_nPinSwitch, m_nPinSwitchVal );
+        digitalWrite( Sm_arrPinOut[ m_nChanNo ], m_nPinSwitchVal );
     }
 }
 
@@ -183,9 +183,7 @@ void CManualSwitch::SetState( bool a_bStateOn, ulong a_nAutoOff )
 void CManualSwitch::OnGroupCmd( byte* payload, uint len )
 {
     if( m_nMode != SW_MODE_ENABLED )
-    {
         return;
-    }
 
     if( StringBeginsWith( MQTT_CMD_PH_LONG_TAP, MQTT_CMD_PH_LONG_TAP_LEN, payload, len ))
     {

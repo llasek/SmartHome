@@ -14,6 +14,13 @@
 
 
 
+// MQTT QOS
+#define MQTT_QOS_AT_MOST_ONCE   0
+#define MQTT_QOS_AT_LEAST_ONCE  1
+#define MQTT_QOS_EXACTLY_ONCE   2
+
+
+
 /// Config file path
 #define FS_MQTT_CFG     "mqtt_cfg"
 
@@ -124,6 +131,8 @@ public:
     /**
      * Publish a on/off state of a channel over the channel state topic.
      * 
+     * The MQTT message is retained.
+     * 
      * @param[in]   a_nChannel  Channel: SW_CHANNEL_...
      * @param[in]   a_bStateOn  True if current state is on.
      * 
@@ -134,6 +143,8 @@ public:
     /**
      * Publish a message over the device group channel.
      * 
+     * The MQTT message is NOT retained.
+     * 
      * @param[in]   a_pszMsg    Message to send.
      * 
      * @return  True if succesfully sent.
@@ -141,15 +152,12 @@ public:
     bool PubGroup( const char* a_pszMsg );
 
     /**
-     * Publish a heartbeat over the device and channels state topics.
+     * Publish (once) the initial device and channels state.
      * 
-     * Heartbeat messages are periodically published states of the device and all channels.
      * Send a device availability message (MQTT_STAT_ONLINE) over the device state topic.
      * Send an on/off state for all channels over respective channel state topics.
-     * 
-     * @param[in]   a_bForceSend    Override the heartbeat period if true.
      */
-    void PubHeartbeat( bool a_bForceSend );
+    void PubInitState();
 
 
 
@@ -157,14 +165,12 @@ public:
      * MQTT main loop function.
      * 
      * Test if the MQTT is enabled.
-     * Try to connect to configured MQTT server if disconnected.
+     * If connected to MQTT server, publish the initial state and run MQTT main loop.
+     * If disconnected try to connect to the configured MQTT server.
      * Upon connect subscribe to:
      * 1. Device command subscription topic,
      * 2. All channels command subsctiption topics, i.e. <device cmd sub topic> + "/ch#"",
      * 3. Device private pub/sub topic,
-     * and send a heartbeat to notify device is online.
-     * 
-     * If connected, drive the heartbeat messages.
      * 
      * Note the function will take the configured WIFI client connection timeout time to exit in case the MQTT server is unavailable.
      */
@@ -204,6 +210,8 @@ protected:
     /**
      * Publish a channel status over the channel status pub topic.
      * 
+     * The MQTT message is retained.
+     * 
      * @param[in]   a_nChannel  Channel: SW_CHANNEL_...
      * @param[in]   a_pszMsg    Message to publish.
      * 
@@ -213,6 +221,8 @@ protected:
 
     /**
      * Publish a device status over the device status pub topic.
+     * 
+     * The MQTT message is retained.
      * 
      * @param[in]   a_pszMsg    Message to publish.
      * 
@@ -225,7 +235,8 @@ protected:
     WiFiClient m_wc;        ///< WIFI client - controls connection timeout in the main loop function
     PubSubClient m_mqtt;    ///< The MQTT client    
     bool m_bEnabled;        ///< True if MQTT is enabled
-    CTimer m_tmHeartbeat;   ///< Heartbeat timer
+    bool m_bInitStatSent;   ///< True if the initial state is sent
+    CTimer m_tmInitStat;    ///< Initial state send timer
     byte* m_pPayloadBuf;    ///< Private buf for the received message in MQTT callback - see implementation for details
     uint m_nPayloadBufLen;  ///< Length of the private buf for the received message in MQTT callback
 
@@ -236,7 +247,7 @@ protected:
     String m_strClientId;           ///< Configured MQTT client id
     uint16_t m_nPort;               ///< Configured MQTT service port
     uint16_t m_nConnTimeout;        ///< Configured WIFI connection timeout
-    uint16_t m_nHeartbeatIntvl;     ///< Configured heartbeat interval
+    ulong m_nInitStatDelayMs;       ///< Configured initial state pub delay (ms)
     String m_strSubTopicCmd;        ///< Configured device cmd subscription topic
     String m_strPubTopicStat;       ///< Configured device status publish topic
     String m_strPubSubTopicGrp;     ///< Configured device group pub/sub topic

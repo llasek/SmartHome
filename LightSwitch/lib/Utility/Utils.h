@@ -81,14 +81,16 @@ byte NibbleToU8_16( char a_cNibble );
 const char U8ToNibble_16( byte a_nNibble );
 
 /**
- * Read the next value from config file.
+ * Read a value from the config file.
  * 
- * The config file layout is defined to contain a value every 3 lines.
- * The first 2 lines are skipped as a separator or comment.
- * The 3rd line is being returned as value read.
+ * The config file contains a value every 3 lines:
+ * The 1st line is a separator and is skipped.
+ * The 2nd line is a name/description beginning with a '// ' prefix.
+ * The 3rd line is a value.
  * 
  * @param[in]   a_rFile     Opened configuration file
+ * @param[in]   a_pszName   The beginning of a value name/description
  * 
- * @return  the next configuration value read
+ * @return  The configuration value read
  */
-String CfgFileReadLine( File& a_rFile );
+String CfgFileReadLine( File& a_rFile, const char* a_pszName );

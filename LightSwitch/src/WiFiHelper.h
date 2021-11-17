@@ -16,6 +16,9 @@
 /// Configuration file
 #define FS_WIFI_CFG     "wifi_cfg"
 
+/// The number of APs defined in the config file
+#define WIFI_AP_CNT     2
+
 
 
 /**

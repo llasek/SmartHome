@@ -23,9 +23,9 @@ void EnableAll()
 {
     DBGLOG( "Enable btns" );
     g_mqtt.Enable();
-    g_swChan0.Enable( 0 );
-    g_swChan1.Enable( 1 );
-    g_swChan2.Enable( 2 );
+    g_swChan0.Enable();
+    g_swChan1.Enable();
+    g_swChan2.Enable();
 }
 
 /**
@@ -51,11 +51,9 @@ void setup()
     // Read all cfg files:
     if( LittleFS.begin())
     {
-        File file = CManualSwitch::OpenCfg();
-        g_swChan0.ReadCfg( file );
-        g_swChan1.ReadCfg( file );
-        g_swChan2.ReadCfg( file );
-        file.close();
+        g_swChan0.ReadCfg( 0 );
+        g_swChan1.ReadCfg( 1 );
+        g_swChan2.ReadCfg( 2 );
 
         g_wifi.ReadCfg();
         g_mqtt.ReadCfg();

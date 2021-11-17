@@ -15,7 +15,9 @@
 
 
 /// Config file path
-#define FS_SW_CFG       "sw_cfg"
+#define FS_CH0_CFG          "ch0_cfg"
+#define FS_CH1_CFG          "ch1_cfg"
+#define FS_CH2_CFG          "ch2_cfg"
 
 
 
@@ -98,20 +100,11 @@ class CManualSwitch : public CTouchBtn
 {
 public:
     /**
-     * Open the configuration file.
+     * Read a configuration file
      * 
-     * The configuration file is common for all switches.
-     * 
-     * @return  Opened file
+     * @param[in]   a_nChanNo   channel number
      */
-    static File OpenCfg();
-
-    /**
-     * Read a single switch configuration
-     * 
-     * @param[in]   a_rFile     Configuration file
-     */
-    void ReadCfg( File& a_rFile );
+    void ReadCfg( uint8_t a_nChanNo );
 
 
 
@@ -119,10 +112,8 @@ public:
      * Enable the manual switch
      * 
      * Set up the button and a switch driver according to the configured mode
-     * 
-     * @param[in]   a_nChanNo   channel number
      */
-    void Enable( uint8_t a_nChanNo );
+    void Enable();
 
     /**
      * Disable the manual switch
@@ -189,7 +180,7 @@ public:
 
 
     /**
-     * @brief Handle the received MQTT command 'ON'
+     * @brief Set the switch state.
      * 
      * In the enabled mode:
      * 1. Set the output on/off state and configure the auto-off timer.
@@ -273,7 +264,7 @@ protected:
 
 
 
-    uint8_t m_nPinSwitch;       ///< AC switch driver pin
+    uint8_t m_nChanNo;          ///< Configured channel number
     uint8_t m_nPinSwitchVal;    ///< Current state of the AC switch driver pin
     CTimer m_tmAutoOff;         ///< Auto-off timer
     ulong m_nAutoOff;           ///< Threshold value for auto-off timer, 0:disabled

@@ -16,19 +16,19 @@ void CMqtt::ReadCfg()
     File file = LittleFS.open( FS_MQTT_CFG, "r" );
     if( file )
     {
-        m_strServer = CfgFileReadLine( file );
-        m_nPort = CfgFileReadLine( file ).toInt();
-        m_nConnTimeout = CfgFileReadLine( file ).toInt();
-        m_nHeartbeatIntvl = CfgFileReadLine( file ).toInt();
-        m_strClientId = CfgFileReadLine( file );
-        m_strSubTopicCmd = CfgFileReadLine( file );
-        m_strPubTopicStat = CfgFileReadLine( file );
-        m_strPubSubTopicGrp = CfgFileReadLine( file );
+        m_strServer = CfgFileReadLine( file, "srv" );
+        m_nPort = CfgFileReadLine( file, "port" ).toInt();
+        m_nConnTimeout = CfgFileReadLine( file, "conn" ).toInt();
+        m_nInitStatDelayMs = CfgFileReadLine( file, "init" ).toInt();
+        m_strClientId = CfgFileReadLine( file, "cli" );
+        m_strSubTopicCmd = CfgFileReadLine( file, "sub" );
+        m_strPubTopicStat = CfgFileReadLine( file, "pub" );
+        m_strPubSubTopicGrp = CfgFileReadLine( file, "grp" );
 
-        DBGLOG5( "mqtt cfg: server:'%s' port:%u timeo:%u heartbeat:%u client-id:'%s' ",
-            m_strServer.c_str(), m_nPort, m_nConnTimeout, m_nHeartbeatIntvl, m_strClientId.c_str());
-        DBGLOG3( "cmd-sub:'%s' stat-pub:'%s', grp:'%s'\n",
-            m_strSubTopicCmd.c_str(), m_strPubTopicStat.c_str(), m_strPubSubTopicGrp.c_str());
+        DBGLOG4( "mqtt cfg: server:'%s' port:%u timeo:%u client-id:'%s' ",
+            m_strServer.c_str(), m_nPort, m_nConnTimeout, m_strClientId.c_str());
+        DBGLOG4( "init-delay:%lu cmd-sub:'%s' stat-pub:'%s', grp:'%s'\n",
+            m_nInitStatDelayMs, m_strSubTopicCmd.c_str(), m_strPubTopicStat.c_str(), m_strPubSubTopicGrp.c_str());
     }
     else
     {
@@ -38,10 +38,13 @@ void CMqtt::ReadCfg()
 
 void CMqtt::Enable()
 {
-    if( m_bEnabled )
+    if(( m_bEnabled )
+        || ( m_strServer.isEmpty())
+        || ( m_strClientId.isEmpty()))
         return;
 
     m_bEnabled = true;
+    m_bInitStatSent = false;
     m_wc.setTimeout( m_nConnTimeout );
     m_mqtt.setServer( m_strServer.c_str(), m_nPort );
     m_mqtt.setCallback(
@@ -53,10 +56,8 @@ void CMqtt::Enable()
 
 void CMqtt::Disable()
 {
-    // Fake disable - report 'offline' only but don't actually disconnect mqtt to allow for a reset cmd in case of emergency
-    // m_bEnabled = false;
-    PubStat( MQTT_STAT_OFFLINE );
-    // m_mqtt.disconnect();
+    m_bEnabled = false;
+    m_mqtt.disconnect();
 }
 
 bool CMqtt::PubStat( char a_nChannel, bool a_bStateOn )
@@ -69,17 +70,30 @@ bool CMqtt::PubGroup( const char* a_pszMsg )
     return m_mqtt.publish( m_strPubSubTopicGrp.c_str(), a_pszMsg );
 }
 
-void CMqtt::PubHeartbeat( bool a_bForceSend )
+void CMqtt::PubInitState()
 {
-    m_tmHeartbeat.UpdateCur();
-    if((( m_nHeartbeatIntvl > 0 ) && ( m_tmHeartbeat.Delta() >= m_nHeartbeatIntvl )) || ( a_bForceSend ))
-    {
-        PubStat( MQTT_STAT_ONLINE );
-        m_tmHeartbeat.UpdateLast();
-        g_swChan0.MqttPubStat();
-        g_swChan1.MqttPubStat();
-        g_swChan2.MqttPubStat();
-    }
+    if( m_bInitStatSent )
+        return;
+
+    /*
+     * The delay here is a workaround for some MQTT brokers.
+     * Upon a fast client disconnect/reconnect, the broker will realize the client
+     * has disconnected upon reconnect and will send both retained LWT (offline)
+     * and init state (online) at the same time.
+     * In such case the receiver may see the messages in the reverse order.
+     * 
+     * The delay allows for the LWT message to be sent and received before
+     * the init state message is sent.
+     */
+    m_tmInitStat.UpdateCur();
+    if( m_tmInitStat.Delta() < m_nInitStatDelayMs )
+        return;
+
+    PubStat( MQTT_STAT_ONLINE );
+    g_swChan0.MqttPubStat();
+    g_swChan1.MqttPubStat();
+    g_swChan2.MqttPubStat();
+    m_bInitStatSent = true;
 }
 
 void CMqtt::loop()
@@ -87,7 +101,12 @@ void CMqtt::loop()
     if( !m_bEnabled )
         return;
 
-    if(( !m_mqtt.connected()) && ( m_mqtt.connect( m_strClientId.c_str())))
+    if( m_mqtt.connected())
+    {
+        PubInitState();
+        m_mqtt.loop();
+    }
+    else if( m_mqtt.connect( m_strClientId.c_str(), m_strPubTopicStat.c_str(), MQTT_QOS_EXACTLY_ONCE, true, MQTT_STAT_OFFLINE ))
     {
         m_mqtt.subscribe( m_strSubTopicCmd.c_str());
         String strMqttSubTopicChan( m_strSubTopicCmd + MQTT_TOPIC_CHANNEL );
@@ -96,10 +115,9 @@ void CMqtt::loop()
         m_mqtt.subscribe(( strMqttSubTopicChan + SW_CHANNEL_2 ).c_str());
         m_mqtt.subscribe( m_strPubSubTopicGrp.c_str());
         DBGLOG( "mqtt connected" );
-        PubHeartbeat( true );
+        m_tmInitStat.UpdateAll();
+        m_bInitStatSent = false;
     }
-    PubHeartbeat( false );
-    m_mqtt.loop();
 }
 
 void CMqtt::MqttCb( char* topic, byte* payload, uint len )
@@ -194,7 +212,7 @@ bool CMqtt::PubStat( char a_nChannel, const char* a_pszMsg )
 {
     String strTopic = GetChannelTopic( a_nChannel, m_strPubTopicStat );
     DBGLOG2( "mqtt pub t:'%s' p:'%s'\n", strTopic.c_str(), a_pszMsg );
-    return m_mqtt.publish( strTopic.c_str(), a_pszMsg );
+    return m_mqtt.publish( strTopic.c_str(), a_pszMsg, true );
 }
 
 bool CMqtt::PubStat( const char* a_pszMsg )
