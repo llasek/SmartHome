@@ -67,20 +67,18 @@ const char U8ToNibble_16( byte a_nNibble )
     return "0123456789abcdef"[ a_nNibble & 0xf ];
 }
 
-String CfgFileReadLine( File& a_rFile, const char* a_pszName )
+String CfgFileReadLine( File& a_rFile, const char* a_pszName, const char* a_pszDefault )
 {
     String strPrefix( a_pszName );
     a_rFile.seek( 0 );
     while( a_rFile.available())
     {
-        a_rFile.readStringUntil( '\n' );
         String str = a_rFile.readStringUntil( '\n' );
         // Skip first 3 characters: '// '
         if(( str.length() > 3 ) && ( StringBeginsWith( strPrefix, (byte*)str.c_str() + 3, str.length())))
         {
             return a_rFile.readStringUntil( '\n' );
         }
-        a_rFile.readStringUntil( '\n' );
     }
-    return "";
+    return a_pszDefault;
 }
