@@ -11,8 +11,8 @@ BtnPressed --> LongTap : cnt == 0 \n and \n timer.delta >= LongTap
 
 BtnReleased : cnt++
 BtnReleased : timer.start
-BtnReleased --> BtnPressed : Button press \n and \n timer.delta < DoubleTap
-BtnReleased --> ShortTap : timer.delta >= DoubleTap
+BtnReleased --> BtnPressed : Button press \n and \n timer.delta < NextTap
+BtnReleased --> ShortTap : timer.delta >= NextTap
 
 ShortTap : callback( cnt )
 ShortTap --> Idle

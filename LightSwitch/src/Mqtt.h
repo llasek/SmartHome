@@ -68,27 +68,27 @@
 
 
 
-/// Phantom short tap cmd - payload
-#define MQTT_CMD_PH_SHORT_TAP       "phs"  // + '/' + <mask> + '/' + <cnt>
+/// Forward short tap cmd - payload
+#define MQTT_CMD_FORWARD_SHORT_TAP      "fst"  // + '/' + <mask> + '/' + <cnt>
 
-/// Phantom short tap cmd - payload len
-#define MQTT_CMD_PH_SHORT_TAP_LEN   3
-
-
-
-/// Phantom long tap cmd - payload
-#define MQTT_CMD_PH_LONG_TAP        "phl"  // + '/' + <mask> + '/' + <cnt>
-
-/// Phantom long tap cmd - payload len
-#define MQTT_CMD_PH_LONG_TAP_LEN    3
+/// Forward short tap cmd - payload len
+#define MQTT_CMD_FORWARD_SHORT_TAP_LEN  3
 
 
 
-/// Switch long tap cmd - payload
-#define MQTT_CMD_SW_LONG_TAP        "swl"   // + '/' + <mask> + '/' + <cnt>
+/// Forward long tap cmd - payload
+#define MQTT_CMD_FORWARD_LONG_TAP       "flt"  // + '/' + <mask> + '/' + <cnt>
 
-/// Switch long tap cmd - payload len
-#define MQTT_CMD_SW_LONG_TAP_LEN    3
+/// Forward long tap cmd - payload len
+#define MQTT_CMD_FORWARD_LONG_TAP_LEN   3
+
+
+
+/// Turn off cmd - payload
+#define MQTT_CMD_TURN_OFF               "tof"   // + '/' + <mask> + '/' + <cnt>
+
+/// Turn off cmd - payload len
+#define MQTT_CMD_TURN_OFF_LEN           3
 
 
 
@@ -181,7 +181,7 @@ public:
      * 
      * Dispatch the command received:
      * 1. Device cmd sub topic: MQTT_CMD_RESET,
-     * 2. Device group pub sub topic: group cmds: MQTT_CMD_PH_SHORT_TAP, MQTT_CMD_PH_LONG_TAP, MQTT_CMD_SW_LONG_TAP
+     * 2. Device group pub sub topic: group cmds: MQTT_CMD_FORWARD_SHORT_TAP, MQTT_CMD_FORWARD_LONG_TAP, MQTT_CMD_TURN_OFF
      * 3. Channel cmd sub topic: MQTT_CMD_CH_ON, MQTT_CMD_CH_OFF.
      * 
      * @param[in]   topic       MQTT topic of the incoming cmd.

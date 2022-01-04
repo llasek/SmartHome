@@ -1,12 +1,27 @@
 // ch0_cfg file
-// id: 0:disabled, 1-64:enabled, phantom:phantom:
-phantom
+// id: 0:disabled, 1-64:enabled:
+0
 
-// mask: enabled:long tap off mask, phantom:fwd mask
+// ev-ss tap: tgle, tgof+mask, aoff+secs, fwte+mask, else disabled:
+fwte
+
+// arg-ss tap:
+0x8000000000000000
+
+// ev-sm tap: tgle, tgof+mask, aoff+secs, fwte+mask, else disabled:
+fwte
+
+// arg-sm tap:
+0x4000000000000000
+
+// ev-ls tap: tgle, tgof+mask, aoff+secs, fwte+mask, else disabled:
+fwte
+
+// arg-ls tap: mask:
 0xf000000000000000
 
 // long tap ms, 0:disabled:
-150
+250
 
-// dbl tap ms, 0:disabled:
-150
+// next tap ms, 0:disabled:
+250

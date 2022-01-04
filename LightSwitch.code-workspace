@@ -24,6 +24,10 @@
 			"vector": "cpp",
 			"system_error": "cpp",
 			"cinttypes": "cpp"
-		}
+		},
+		"plantuml.diagramsRoot": "diagrams",
+		"plantuml.exportFormat": "svg",
+		"plantuml.exportOutDir": "diagrams",
+		"plantuml.exportSubFolder": false
 	}
 }

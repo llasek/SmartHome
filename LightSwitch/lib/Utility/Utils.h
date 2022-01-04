@@ -83,14 +83,14 @@ const char U8ToNibble_16( byte a_nNibble );
 /**
  * Read a value from the config file.
  * 
- * The config file contains a value every 3 lines:
- * The 1st line is a separator and is skipped.
- * The 2nd line is a name/description beginning with a '// ' prefix.
- * The 3rd line is a value.
+ * Find a line containing the specified name/description. The line always begins with a '// ' prefix in the file.
+ * Read the corresponding configuration entry value on the next line.
+ * Return default if entry not found.
  * 
- * @param[in]   a_rFile     Opened configuration file
- * @param[in]   a_pszName   The beginning of a value name/description
+ * @param[in]   a_rFile         Opened configuration file
+ * @param[in]   a_pszName       The beginning of a value name/description entry
+ * @param[in]   a_pszDefault    The default value returned if no specified entry found
  * 
  * @return  The configuration value read
  */
-String CfgFileReadLine( File& a_rFile, const char* a_pszName );
+String CfgFileReadLine( File& a_rFile, const char* a_pszName, const char* a_pszDefault = "" );

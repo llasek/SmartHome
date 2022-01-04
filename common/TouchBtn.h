@@ -19,7 +19,7 @@
  * 
  * The following tapping patterns are implemented:
  * 1. Multiple short taps - multiple taps, lasting for no longer than a configured long tap duration,
- *    and no more than a configured double tap duration apart from the last one.
+ *    and no more than a configured next tap duration apart from the last one.
  * 2. Single long tap - lasting for at least a configured long tap duraction.
  * See the state machine diagram for details - TouchBtn.png
  */
@@ -32,18 +32,18 @@ public:
      * Enable the touch button.
      * 
      * Set the state to idle.
-     * Configure duration for multi/double taps.
+     * Configure duration for long/multi taps.
      * Configure the MCU input pin and attach an interrupt on state change.
      * 
      * @param[in]   a_nPin          MCU input pin
      * @param[in]   a_nLongTapMs    Long tap duration in ms
-     * @param[in]   a_nDblTapMs     Double tap/next tap maximum delay since the last tap
+     * @param[in]   a_nNextTapMs    Double tap/next tap maximum delay since the last tap
      */
-    void Enable( uint8_t a_nPin, uint16_t a_nLongTapMs, uint16_t a_nDblTapMs )
+    void Enable( uint8_t a_nPin, uint16_t a_nLongTapMs, uint16_t a_nNextTapMs )
     {
         SetStateIdle();
         m_nLongTapMs = a_nLongTapMs;
-        m_nDblTapMs = a_nDblTapMs;
+        m_nNextTapMs = a_nNextTapMs;
         m_nPin = digitalPinToInterrupt( a_nPin );
         pinMode( m_nPin, INPUT );
         attachInterruptArg( m_nPin, reinterpret_cast< void (*)( void* )>( Isr ), this, CHANGE );
@@ -75,7 +75,7 @@ public:
      * Main loop function.
      * 
      * Track the time passed since the last short tap finished.
-     * Execute OnShortTap(tap cnt) callback when time threshold exceeded for a double tap pattern.
+     * Execute OnShortTap(tap cnt) callback when time threshold exceeded for a multi tap pattern.
      */
     void loop()
     {
@@ -84,7 +84,7 @@ public:
         {
             m_tmPress.UpdateCur();
             ulong nPressDuration = m_tmPress.Delta();
-            if( nPressDuration >= m_nDblTapMs )
+            if( nPressDuration >= m_nNextTapMs )
             {
                 OnShortTap( m_nPressCnt );
                 // SetStateIdle();
@@ -187,7 +187,7 @@ protected:
                 {
                     m_tmPress.UpdateCur();
                     ulong nPressDuration = m_tmPress.Delta();
-                    if( nPressDuration < m_nDblTapMs )
+                    if( nPressDuration < m_nNextTapMs )
                         SetStateBtnPressed();
                 }
                 break;
@@ -228,7 +228,7 @@ protected:
 
     uint8_t m_nPin;         ///< MCU input pin
     uint16_t m_nLongTapMs;  ///< The minimal duration of the long tap in ms
-    uint16_t m_nDblTapMs;   ///< The maximum time for the next tap in a multitap sequence
+    uint16_t m_nNextTapMs;  ///< The maximum time for the next tap in a multitap sequence
     uint16_t m_nPressCnt;   ///< The tap counter in a multitap sequence
     CTimer m_tmPress;       ///< Timer for long/multi tap
 };
