@@ -34,14 +34,6 @@
 
 
 
-/// Device reset private cmd - payload
-#define MQTT_CMD_RESET      "reset"
-
-/// Device reset private cmd - payload len
-#define MQTT_CMD_RESET_LEN  5
-
-
-
 /// Channel on state - payload
 #define MQTT_CMD_CH_ON      "on"
 
@@ -69,26 +61,42 @@
 
 
 /// Forward short tap cmd - payload
-#define MQTT_CMD_FORWARD_SHORT_TAP      "fst"  // + '/' + <mask> + '/' + <cnt>
+#define MQTT_CMD_GRP_FWD_SHORT_TAP      "fst"  // + '/' + <mask> + '/' + <cnt>
 
 /// Forward short tap cmd - payload len
-#define MQTT_CMD_FORWARD_SHORT_TAP_LEN  3
+#define MQTT_CMD_GRP_FWD_SHORT_TAP_LEN  3
 
 
 
 /// Forward long tap cmd - payload
-#define MQTT_CMD_FORWARD_LONG_TAP       "flt"  // + '/' + <mask> + '/' + <cnt>
+#define MQTT_CMD_GRP_FWD_LONG_TAP       "flt"  // + '/' + <mask> + '/' + <cnt>
 
 /// Forward long tap cmd - payload len
-#define MQTT_CMD_FORWARD_LONG_TAP_LEN   3
+#define MQTT_CMD_GRP_FWD_LONG_TAP_LEN   3
 
 
 
 /// Turn off cmd - payload
-#define MQTT_CMD_TURN_OFF               "tof"   // + '/' + <mask> + '/' + <cnt>
+#define MQTT_CMD_GRP_TURN_OFF           "tof"   // + '/' + <mask> + '/' + <cnt>
 
 /// Turn off cmd - payload len
-#define MQTT_CMD_TURN_OFF_LEN           3
+#define MQTT_CMD_GRP_TURN_OFF_LEN       3
+
+
+
+/// Device discovery cmd - payload
+#define MQTT_CMD_MGT_DISCOVERY          "dir"
+
+/// Device discovery cmd - payload len
+#define MQTT_CMD_MGT_DISCOVERY_LEN      3
+
+
+
+/// Device reset cmd - payload
+#define MQTT_CMD_MGT_RESET              "rst"   // + '/' + <hostname>
+
+/// Device reset cmd - payload len
+#define MQTT_CMD_MGT_RESET_LEN          3
 
 
 
@@ -141,6 +149,17 @@ public:
     bool PubStat( char a_nChannel, bool a_bStateOn );
 
     /**
+     * Publish a message over the device management channel.
+     * 
+     * The MQTT message is NOT retained.
+     * 
+     * @param[in]   a_pszMsg    Message to send.
+     * 
+     * @return  True if succesfully sent.
+     */
+    bool PubMgt( const char* a_pszMsg );
+
+    /**
      * Publish a message over the device group channel.
      * 
      * The MQTT message is NOT retained.
@@ -158,6 +177,20 @@ public:
      * Send an on/off state for all channels over respective channel state topics.
      */
     void PubInitState();
+
+
+
+    /**
+     * Handle the received MQTT management command.
+     * 
+     * Decode and execute the management command. The following cmds are handled:
+     * 1. MQTT_CMD_MGT_DISCOVERY
+     * 2. MQTT_CMD_MGT_RESET
+     * 
+     * @param[in]   payload     MQTT message paylaod
+     * @param[in]   len         Length of the payload
+     */
+    void OnMgtCmd( byte* payload, uint len );
 
 
 
@@ -181,7 +214,7 @@ public:
      * 
      * Dispatch the command received:
      * 1. Device cmd sub topic: MQTT_CMD_RESET,
-     * 2. Device group pub sub topic: group cmds: MQTT_CMD_FORWARD_SHORT_TAP, MQTT_CMD_FORWARD_LONG_TAP, MQTT_CMD_TURN_OFF
+     * 2. Device group pub sub topic: group cmds: MQTT_CMD_GRP_FWD_SHORT_TAP, MQTT_CMD_GRP_FWD_LONG_TAP, MQTT_CMD_GRP_TURN_OFF
      * 3. Channel cmd sub topic: MQTT_CMD_CH_ON, MQTT_CMD_CH_OFF.
      * 
      * @param[in]   topic       MQTT topic of the incoming cmd.
@@ -251,4 +284,6 @@ protected:
     String m_strSubTopicCmd;        ///< Configured device cmd subscription topic
     String m_strPubTopicStat;       ///< Configured device status publish topic
     String m_strPubSubTopicGrp;     ///< Configured device group pub/sub topic
+    String m_strSubTopicMgt;        ///< Configured device management sub topic
+    String m_strPubTopicMgt;        ///< Configured device management pub topic
 };

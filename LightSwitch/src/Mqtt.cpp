@@ -5,7 +5,11 @@
  */
 #include "Mqtt.h"
 #include "ManualSwitch.h"
+#include "WiFiHelper.h"
 #include "Utils.h"
+#include "FwRev.h"
+
+extern CWiFiHelper g_wifi;
 
 extern CManualSwitch g_swChan0;
 extern CManualSwitch g_swChan1;
@@ -24,11 +28,14 @@ void CMqtt::ReadCfg()
         m_strSubTopicCmd = CfgFileReadLine( file, "sub" );
         m_strPubTopicStat = CfgFileReadLine( file, "pub" );
         m_strPubSubTopicGrp = CfgFileReadLine( file, "grp" );
+        m_strPubTopicMgt = m_strSubTopicMgt = CfgFileReadLine( file, "mgt" );
+        m_strPubTopicMgt += "/stat";
+        m_strSubTopicMgt += "/cmd";
 
         DBGLOG4( "mqtt cfg: server:'%s' port:%u timeo:%u client-id:'%s' ",
             m_strServer.c_str(), m_nPort, m_nConnTimeout, m_strClientId.c_str());
-        DBGLOG4( "init-delay:%lu cmd-sub:'%s' stat-pub:'%s', grp:'%s'\n",
-            m_nInitStatDelayMs, m_strSubTopicCmd.c_str(), m_strPubTopicStat.c_str(), m_strPubSubTopicGrp.c_str());
+        DBGLOG5( "init-delay:%lu cmd-sub:'%s' stat-pub:'%s' grp:'%s' mgt:'%s|stat'\n",
+            m_nInitStatDelayMs, m_strSubTopicCmd.c_str(), m_strPubTopicStat.c_str(), m_strPubSubTopicGrp.c_str(), m_strSubTopicMgt.c_str());
     }
     else
     {
@@ -65,6 +72,11 @@ bool CMqtt::PubStat( char a_nChannel, bool a_bStateOn )
     return PubStat( a_nChannel, ( a_bStateOn ) ? MQTT_CMD_CH_ON : MQTT_CMD_CH_OFF );
 }
 
+bool CMqtt::PubMgt( const char* a_pszMsg )
+{
+    return m_mqtt.publish( m_strPubTopicMgt.c_str(), a_pszMsg );
+}
+
 bool CMqtt::PubGroup( const char* a_pszMsg )
 {
     return m_mqtt.publish( m_strPubSubTopicGrp.c_str(), a_pszMsg );
@@ -93,7 +105,34 @@ void CMqtt::PubInitState()
     g_swChan0.MqttPubStat();
     g_swChan1.MqttPubStat();
     g_swChan2.MqttPubStat();
+
+    OnMgtCmd((byte*)MQTT_CMD_MGT_DISCOVERY, MQTT_CMD_MGT_DISCOVERY_LEN );
     m_bInitStatSent = true;
+}
+
+void CMqtt::OnMgtCmd( byte* payload, uint len )
+{
+    String strHostName = g_wifi.GetHostName();
+    if( StringEq( MQTT_CMD_MGT_DISCOVERY, MQTT_CMD_MGT_DISCOVERY_LEN, payload, len ))
+    {
+        String strResp( FW_REV_CURRENT );
+        strResp += " ";
+        strResp += strHostName;
+        strResp += " ";
+        strResp += g_wifi.GetIp();
+        strResp += " ";
+        strResp += g_wifi.GetMac();
+        PubMgt( strResp.c_str());
+    }
+    else if( StringBeginsWith( MQTT_CMD_MGT_RESET, MQTT_CMD_MGT_RESET_LEN, payload, len ))
+    {
+        payload += MQTT_CMD_MGT_RESET_LEN + 1;  // skip the separator
+        len -= MQTT_CMD_MGT_RESET_LEN + 1;
+        if( StringEq( strHostName, payload, len ))
+        {
+            ESP.reset();
+        }
+    }
 }
 
 void CMqtt::loop()
@@ -114,6 +153,7 @@ void CMqtt::loop()
         m_mqtt.subscribe(( strMqttSubTopicChan + SW_CHANNEL_1 ).c_str());
         m_mqtt.subscribe(( strMqttSubTopicChan + SW_CHANNEL_2 ).c_str());
         m_mqtt.subscribe( m_strPubSubTopicGrp.c_str());
+        m_mqtt.subscribe( m_strSubTopicMgt.c_str());
         DBGLOG( "mqtt connected" );
         m_tmInitStat.UpdateAll();
         m_bInitStatSent = false;
@@ -152,21 +192,16 @@ void CMqtt::MqttCb( char* topic, byte* payload, uint len )
     }
     DBGLOG( '\'' );
 
-    if( m_strSubTopicCmd == topic )
-    {
-        if( StringEq( MQTT_CMD_RESET, MQTT_CMD_RESET_LEN, pBuf, len ))
-        {
-            DBGLOG( "reset" );
-            Disable();
-            ESP.reset();
-        }
-        return;
-    }
-    else if( m_strPubSubTopicGrp == topic )
+    if( m_strPubSubTopicGrp == topic )
     {
         g_swChan0.OnGroupCmd( pBuf, len );
         g_swChan1.OnGroupCmd( pBuf, len );
         g_swChan2.OnGroupCmd( pBuf, len );
+        return;
+    }
+    else if( m_strSubTopicMgt == topic )
+    {
+        OnMgtCmd( pBuf, len );
         return;
     }
 

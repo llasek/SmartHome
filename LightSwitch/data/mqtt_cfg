@@ -22,3 +22,6 @@ sw/stat/testbed
 
 // grp pub/sub topic: device group
 sw/grp/home
+
+// mgt topic: device management pub/sub topic
+sw/mgt/home
