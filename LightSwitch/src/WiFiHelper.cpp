@@ -50,6 +50,16 @@ void CWiFiHelper::AlternateCfg()
     }
 }
 
+String CWiFiHelper::GetMac()
+{
+    return WiFi.macAddress();
+}
+
+String CWiFiHelper::GetIp()
+{
+    return WiFi.localIP().toString();
+}
+
 String& CWiFiHelper::GetHostName()
 {
     return m_strHostname;

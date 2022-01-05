@@ -80,12 +80,12 @@
  * 1. tgle - toggle the on/off state of the switch driver output. This is the default.
  *    arg: none
  * 2. tgof - the same as above, but turn off (mask off) other switches in the group via a group command:
- *           MQTT_CMD_TURN_OFF.
+ *           MQTT_CMD_GRP_TURN_OFF.
  *    arg: 64-bit hexadecimal group mask (0x0123456789abcdef).
  * 3. aoff - turn the output on for max(taps#-1 (multi-tap), 1 (single tap)) * arg seconds.
  *    arg: auto-off timer step duration.
  * 4. fwte - don't drive the local output, only forward the tap event to configured remote switches
- *           via a corresponding MQTT group cmd: MQTT_CMD_FORWARD_SHORT_TAP, MQTT_CMD_FORWARD_LONG_TAP.
+ *           via a corresponding MQTT group cmd: MQTT_CMD_GRP_FWD_SHORT_TAP, MQTT_CMD_GRP_FWD_LONG_TAP.
  *    arg: 64-bit hexadecimal group mask (0x0123456789abcdef).
  * 5. anything else - the tap event is disabled/ignored.
  * 
@@ -184,7 +184,7 @@ public:
      * 
      * 2. SW_TAP_OP_TOGGLE_MASK_OFF:
      *  a. Same as SW_TAP_OP_TOGGLE.
-     *  b. Send the MQTT_CMD_TURN_OFF group command to turn off all masked switches in the group.
+     *  b. Send the MQTT_CMD_GRP_TURN_OFF group command to turn off all masked switches in the group.
      * 
      * 3. SW_TAP_OP_AUTO_OFF:
      *  a. Turn the output on.
@@ -192,7 +192,7 @@ public:
      *  c. Publish the switch on/off state via MQTT pub topic.
      * 
      * 4. SW_TAP_OP_FORWARD:
-     *  a. Forward the tap event through the MQTT_CMD_FORWARD_SHORT_TAP/MQTT_CMD_FORWARD_LONG_TAP group command.
+     *  a. Forward the tap event through the MQTT_CMD_GRP_FWD_SHORT_TAP/MQTT_CMD_GRP_FWD_LONG_TAP group command.
      * 
      * 5. SW_TAP_OP_DISABLE:
      *  a. no-op.
@@ -232,9 +232,9 @@ public:
      * Handle the received MQTT group command.
      * 
      * Decode and execute the group command. The following cmds are handled:
-     * 1. MQTT_CMD_FORWARD_SHORT_TAP
-     * 2. MQTT_CMD_FORWARD_LONG_TAP
-     * 3. MQTT_CMD_TURN_OFF
+     * 1. MQTT_CMD_GRP_FWD_SHORT_TAP
+     * 2. MQTT_CMD_GRP_FWD_LONG_TAP
+     * 3. MQTT_CMD_GRP_TURN_OFF
      * 
      * @param[in]   payload     MQTT message paylaod
      * @param[in]   len         Length of the payload

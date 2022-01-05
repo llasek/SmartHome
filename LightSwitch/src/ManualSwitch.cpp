@@ -4,7 +4,6 @@
  * 2021 Łukasz Łasek
  */
 #include "ManualSwitch.h"
-#include "WiFiHelper.h"
 #include "Mqtt.h"
 #include "Utils.h"
 
@@ -22,9 +21,9 @@ extern CMqtt g_mqtt;
 
 // Tap operations:
 #define SW_TAP_OP_TOGGLE            0   // Toggle output on/off. Arg: none
-#define SW_TAP_OP_TOGGLE_MASK_OFF   1   // Toggle output on/off and send MQTT_CMD_TURN_OFF. Arg: mask
+#define SW_TAP_OP_TOGGLE_MASK_OFF   1   // Toggle output on/off and send MQTT_CMD_GRP_TURN_OFF. Arg: mask
 #define SW_TAP_OP_AUTO_OFF          2   // Turn on the output, setup auto-off timer for (TapCnt * <arg>) secs. Arg: timer step duratin in seconds
-#define SW_TAP_OP_FORWARD           3   // Forward the tap event via MQTT_CMD_FORWARD_SHORT_TAP/MQTT_CMD_FORWARD_LONG_TAP. Arg: mask
+#define SW_TAP_OP_FORWARD           3   // Forward the tap event via MQTT_CMD_GRP_FWD_SHORT_TAP/MQTT_CMD_GRP_FWD_LONG_TAP. Arg: mask
 #define SW_TAP_OP_DISABLE           4   // Fake op, no-op. Arg: none
 #define SW_TAP_OPS                  4   // # of real ops, i.e. not including DISABLE
 static_assert( SW_TAP_OP_DISABLE == SW_TAP_OPS, "Review all SW tap modes" );
@@ -187,7 +186,7 @@ void CManualSwitch::OnTap( uint8_t a_nTapEvent, uint16_t a_nTapCnt )
 
         case SW_TAP_OP_TOGGLE_MASK_OFF:
             SetState( !GetSwitchState(), 0 );
-            MqttSendGroupCmd( MQTT_CMD_TURN_OFF, 1, m_arrTapArgs[ a_nTapEvent ].c_str());
+            MqttSendGroupCmd( MQTT_CMD_GRP_TURN_OFF, 1, m_arrTapArgs[ a_nTapEvent ].c_str());
             break;
 
         case SW_TAP_OP_AUTO_OFF:
@@ -195,7 +194,7 @@ void CManualSwitch::OnTap( uint8_t a_nTapEvent, uint16_t a_nTapCnt )
             break;
 
         case SW_TAP_OP_FORWARD:
-            MqttSendGroupCmd(( a_nTapEvent == SW_TAP_EVENT_LONG_SINGLE ) ?  MQTT_CMD_FORWARD_LONG_TAP : MQTT_CMD_FORWARD_SHORT_TAP, a_nTapCnt, m_arrTapArgs[ a_nTapEvent ].c_str());
+            MqttSendGroupCmd(( a_nTapEvent == SW_TAP_EVENT_LONG_SINGLE ) ?  MQTT_CMD_GRP_FWD_LONG_TAP : MQTT_CMD_GRP_FWD_SHORT_TAP, a_nTapCnt, m_arrTapArgs[ a_nTapEvent ].c_str());
             break;
 
         default:
@@ -235,10 +234,10 @@ void CManualSwitch::SetState( bool a_bStateOn, ulong a_nAutoOff )
 
 void CManualSwitch::OnGroupCmd( byte* payload, uint len )
 {
-    if( StringBeginsWith( MQTT_CMD_FORWARD_LONG_TAP, MQTT_CMD_FORWARD_LONG_TAP_LEN, payload, len ))
+    if( StringBeginsWith( MQTT_CMD_GRP_FWD_LONG_TAP, MQTT_CMD_GRP_FWD_LONG_TAP_LEN, payload, len ))
     {
-        payload += MQTT_CMD_FORWARD_LONG_TAP_LEN + 1;    // skip the separator
-        len -= MQTT_CMD_FORWARD_LONG_TAP_LEN + 1;
+        payload += MQTT_CMD_GRP_FWD_LONG_TAP_LEN + 1;    // skip the separator
+        len -= MQTT_CMD_GRP_FWD_LONG_TAP_LEN + 1;
         OnGroupMaskCmd( payload, len,
             [ this ]( const char* a_pMask, uint16_t a_nCnt )
             {
@@ -258,10 +257,10 @@ void CManualSwitch::OnGroupCmd( byte* payload, uint len )
                 this->m_pszClearMask = NULL;
             });
     }
-    else if( StringBeginsWith( MQTT_CMD_FORWARD_SHORT_TAP, MQTT_CMD_FORWARD_SHORT_TAP_LEN, payload, len ))
+    else if( StringBeginsWith( MQTT_CMD_GRP_FWD_SHORT_TAP, MQTT_CMD_GRP_FWD_SHORT_TAP_LEN, payload, len ))
     {
-        payload += MQTT_CMD_FORWARD_SHORT_TAP_LEN + 1;   // skip the separator
-        len -= MQTT_CMD_FORWARD_SHORT_TAP_LEN + 1;
+        payload += MQTT_CMD_GRP_FWD_SHORT_TAP_LEN + 1;   // skip the separator
+        len -= MQTT_CMD_GRP_FWD_SHORT_TAP_LEN + 1;
         OnGroupMaskCmd( payload, len,
             [ this ]( const char* a_pMask, uint16_t a_nCnt )
             {
@@ -270,10 +269,10 @@ void CManualSwitch::OnGroupCmd( byte* payload, uint len )
                 this->m_pszClearMask = NULL;
             });
     }
-    else if( StringBeginsWith( MQTT_CMD_TURN_OFF, MQTT_CMD_TURN_OFF_LEN, payload, len ))
+    else if( StringBeginsWith( MQTT_CMD_GRP_TURN_OFF, MQTT_CMD_GRP_TURN_OFF_LEN, payload, len ))
     {
-        payload += MQTT_CMD_TURN_OFF_LEN + 1;   // skip the separator
-        len -= MQTT_CMD_TURN_OFF_LEN + 1;
+        payload += MQTT_CMD_GRP_TURN_OFF_LEN + 1;   // skip the separator
+        len -= MQTT_CMD_GRP_TURN_OFF_LEN + 1;
         OnGroupMaskCmd( payload, len,
             [ this ]( const char* a_pMask, uint16_t a_nCnt )
             {

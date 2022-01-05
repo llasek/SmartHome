@@ -50,6 +50,20 @@ public:
 
 
     /**
+     * @brief Return the MAC address.
+     * 
+     * @return MAC address.
+     */
+    String GetMac();
+
+    /**
+     * @brief Return the current IP address
+     * 
+     * @return Current IP address.
+     */
+    String GetIp();
+
+    /**
      * Return the configured host name.
      * 
      * @return  Configured host hame.
