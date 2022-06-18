@@ -1,12 +1,13 @@
 /**
  * DIY Smart Home - light switch
  * MQTT client
- * 2021 Łukasz Łasek
+ * 2021-2022 Łukasz Łasek
  */
 #include "Mqtt.h"
 #include "ManualSwitch.h"
 #include "WiFiHelper.h"
-#include "Utils.h"
+#include "CfgUtils.h"
+#include "StringUtils.h"
 #include "FwRev.h"
 
 extern CWiFiHelper g_wifi;
@@ -20,15 +21,15 @@ void CMqtt::ReadCfg()
     File file = LittleFS.open( FS_MQTT_CFG, "r" );
     if( file )
     {
-        m_strServer = CfgFileReadLine( file, "srv" );
-        m_nPort = CfgFileReadLine( file, "port" ).toInt();
-        m_nConnTimeout = CfgFileReadLine( file, "conn" ).toInt();
-        m_nInitStatDelayMs = CfgFileReadLine( file, "init" ).toInt();
-        m_strClientId = CfgFileReadLine( file, "cli" );
-        m_strSubTopicCmd = CfgFileReadLine( file, "sub" );
-        m_strPubTopicStat = CfgFileReadLine( file, "pub" );
-        m_strPubSubTopicGrp = CfgFileReadLine( file, "grp" );
-        m_strPubTopicMgt = m_strSubTopicMgt = CfgFileReadLine( file, "mgt" );
+        m_strServer = CConfigUtils::ReadValue( file, "srv" );
+        m_nPort = CConfigUtils::ReadValue( file, "port" ).toInt();
+        m_nConnTimeout = CConfigUtils::ReadValue( file, "conn" ).toInt();
+        m_nInitStatDelayMs = CConfigUtils::ReadValue( file, "init" ).toInt();
+        m_strClientId = CConfigUtils::ReadValue( file, "cli" );
+        m_strSubTopicCmd = CConfigUtils::ReadValue( file, "sub" );
+        m_strPubTopicStat = CConfigUtils::ReadValue( file, "pub" );
+        m_strPubSubTopicGrp = CConfigUtils::ReadValue( file, "grp" );
+        m_strPubTopicMgt = m_strSubTopicMgt = CConfigUtils::ReadValue( file, "mgt" );
         m_strPubTopicMgt += "/stat";
         m_strSubTopicMgt += "/cmd";
 
@@ -113,7 +114,7 @@ void CMqtt::PubInitState()
 void CMqtt::OnMgtCmd( byte* payload, uint len )
 {
     String strHostName = g_wifi.GetHostName();
-    if( StringEq( MQTT_CMD_MGT_DISCOVERY, MQTT_CMD_MGT_DISCOVERY_LEN, payload, len ))
+    if( CStringUtils::IsEqual( MQTT_CMD_MGT_DISCOVERY, MQTT_CMD_MGT_DISCOVERY_LEN, payload, len ))
     {
         String strResp( FW_REV_CURRENT );
         strResp += " ";
@@ -124,11 +125,11 @@ void CMqtt::OnMgtCmd( byte* payload, uint len )
         strResp += g_wifi.GetMac();
         PubMgt( strResp.c_str());
     }
-    else if( StringBeginsWith( MQTT_CMD_MGT_RESET, MQTT_CMD_MGT_RESET_LEN, payload, len ))
+    else if( CStringUtils::BeginsWith( MQTT_CMD_MGT_RESET, MQTT_CMD_MGT_RESET_LEN, payload, len ))
     {
         payload += MQTT_CMD_MGT_RESET_LEN + 1;  // skip the separator
         len -= MQTT_CMD_MGT_RESET_LEN + 1;
-        if( StringEq( strHostName, payload, len ))
+        if( CStringUtils::IsEqual( strHostName, payload, len ))
         {
             ESP.reset();
         }
@@ -221,11 +222,11 @@ void CMqtt::MqttCb( char* topic, byte* payload, uint len )
 
     if( pms )
     {
-        if( StringEq( MQTT_CMD_CH_ON, MQTT_CMD_CH_ON_LEN, pBuf, len ))
+        if( CStringUtils::IsEqual( MQTT_CMD_CH_ON, MQTT_CMD_CH_ON_LEN, pBuf, len ))
         {
             pms->SetState( true, 0 );
         }
-        else if( StringEq( MQTT_CMD_CH_OFF, MQTT_CMD_CH_OFF_LEN, pBuf, len ))
+        else if( CStringUtils::IsEqual( MQTT_CMD_CH_OFF, MQTT_CMD_CH_OFF_LEN, pBuf, len ))
         {
             pms->SetState( false, 0 );
         }

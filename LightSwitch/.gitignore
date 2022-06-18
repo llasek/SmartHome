@@ -4,3 +4,4 @@
 .vscode/launch.json
 .vscode/ipch
 data/wifi_cfg
+data/mqtt_cfg

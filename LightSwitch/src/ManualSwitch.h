@@ -1,7 +1,7 @@
 /**
  * DIY Smart Home - light switch
  * Manual switch
- * 2021 Łukasz Łasek
+ * 2021-2022 Łukasz Łasek
  */
 #pragma once
 #include <Arduino.h>
@@ -9,7 +9,6 @@
 
 #include "TouchBtn.h"
 #include "Mqtt.h"
-#include "Utils.h"
 #include "dbg.h"
 
 

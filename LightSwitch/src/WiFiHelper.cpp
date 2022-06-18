@@ -1,10 +1,10 @@
 /**
  * DIY Smart Home - light switch
  * WIFI helper class
- * 2021 Łukasz Łasek
+ * 2021-2022 Łukasz Łasek
  */
 #include "WiFiHelper.h"
-#include "Utils.h"
+#include "CfgUtils.h"
 
 CWiFiHelper::CWiFiHelper()
     : m_nCurAP( 0 )
@@ -19,14 +19,14 @@ void CWiFiHelper::ReadCfg()
     File file = LittleFS.open( FS_WIFI_CFG, "r" );
     if( file )
     {
-        m_strHostname = CfgFileReadLine( file, "host" );
-        m_nConnTimeout = CfgFileReadLine( file, "conn" ).toInt();
+        m_strHostname = CConfigUtils::ReadValue( file, "host" );
+        m_nConnTimeout = CConfigUtils::ReadValue( file, "conn" ).toInt();
 
         const char* arrSsid[ WIFI_AP_CNT ] = { "ssid1", "ssid2" };
-        m_strSsid = CfgFileReadLine( file, arrSsid[ m_nCurAP ]);
+        m_strSsid = CConfigUtils::ReadValue( file, arrSsid[ m_nCurAP ]);
 
         const char* arrPwd[ WIFI_AP_CNT ] = { "pwd1", "pwd2" };
-        m_strPwd = CfgFileReadLine( file, arrPwd[ m_nCurAP ]);
+        m_strPwd = CConfigUtils::ReadValue( file, arrPwd[ m_nCurAP ]);
 
         file.close();
 
