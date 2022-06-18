@@ -1,11 +1,12 @@
 /**
  * DIY Smart Home - light switch
  * Manual switch
- * 2021 Łukasz Łasek
+ * 2021-2022 Łukasz Łasek
  */
 #include "ManualSwitch.h"
 #include "Mqtt.h"
-#include "Utils.h"
+#include "CfgUtils.h"
+#include "StringUtils.h"
 
 #define PIN_IN0     D5  // GPIO 14
 #define PIN_IN1     D6  // GPIO 12
@@ -47,14 +48,14 @@ void CManualSwitch::ReadCfg( uint8_t a_nChanNo )
     File file = LittleFS.open( arrCfgFile[ a_nChanNo ], "r" );
     if( file )
     {
-        m_nId = CfgFileReadLine( file, "id" ).toInt();
+        m_nId = CConfigUtils::ReadValue( file, "id" ).toInt();
         if( m_nId > SW_MAX_ID )
         {
             m_nId = 0;
         }
 
-        m_nLongTapMs = CfgFileReadLine( file, "long" ).toInt();
-        m_nNextTapMs = CfgFileReadLine( file, "next" ).toInt();
+        m_nLongTapMs = CConfigUtils::ReadValue( file, "long" ).toInt();
+        m_nNextTapMs = CConfigUtils::ReadValue( file, "next" ).toInt();
 
         bool bEnabled = ReadCfgTapEvent( file, SW_TAP_EVENT_SHORT_SINGLE );
         bEnabled |= ReadCfgTapEvent( file, SW_TAP_EVENT_SHORT_MULTI );
@@ -86,7 +87,7 @@ bool CManualSwitch::IsDisabled()
 
 bool CManualSwitch::ReadCfgTapEvent( File& a_rFile, uint8_t a_nTapEvent )
 {
-    m_arrTapArgs[ a_nTapEvent ] = CfgFileReadLine( a_rFile, Sg_arrCfgTapEvents[ a_nTapEvent ], Sg_arrCfgTapOps[ SW_TAP_OP_TOGGLE ]);
+    m_arrTapArgs[ a_nTapEvent ] = CConfigUtils::ReadValue( a_rFile, Sg_arrCfgTapEvents[ a_nTapEvent ], Sg_arrCfgTapOps[ SW_TAP_OP_TOGGLE ]);
     for( uint16_t nOp = 0; nOp < SW_TAP_OPS; nOp++ )
     {
         if( m_arrTapArgs[ a_nTapEvent ] == Sg_arrCfgTapOps[ nOp ])
@@ -96,7 +97,7 @@ bool CManualSwitch::ReadCfgTapEvent( File& a_rFile, uint8_t a_nTapEvent )
             {
                 case SW_TAP_OP_TOGGLE_MASK_OFF:
                 case SW_TAP_OP_FORWARD:
-                    m_arrTapArgs[ a_nTapEvent ] = CfgFileReadLine( a_rFile, Sg_arrCfgTapEventArgs[ a_nTapEvent ]);
+                    m_arrTapArgs[ a_nTapEvent ] = CConfigUtils::ReadValue( a_rFile, Sg_arrCfgTapEventArgs[ a_nTapEvent ]);
                     if( m_arrTapArgs[ a_nTapEvent ].length() == MQTT_CMD_MASK_LEN )
                     {
                         // Unmask itself
@@ -105,9 +106,9 @@ bool CManualSwitch::ReadCfgTapEvent( File& a_rFile, uint8_t a_nTapEvent )
                             uint8_t nId = m_nId - 1;
                             uint8_t nNibble = nId >> 2;         // same as: nId / 4
                             uint8_t nMask = 1 << ( nId & 3 );   // same as: 1 << ( nId % 4 )
-                            byte nVal = NibbleToU8_16( m_arrTapArgs[ a_nTapEvent ][ 2 + ( 15 - nNibble )]);
+                            byte nVal = CStringUtils::NibbleToU8_16( m_arrTapArgs[ a_nTapEvent ][ 2 + ( 15 - nNibble )]);
                             nVal &= ~nMask;
-                            m_arrTapArgs[ a_nTapEvent ][ 2 + ( 15 - nNibble )] = U8ToNibble_16( nVal );
+                            m_arrTapArgs[ a_nTapEvent ][ 2 + ( 15 - nNibble )] = CStringUtils::U8ToNibble_16( nVal );
                         }
                     }
                     else
@@ -117,7 +118,7 @@ bool CManualSwitch::ReadCfgTapEvent( File& a_rFile, uint8_t a_nTapEvent )
                     break;
 
                 case SW_TAP_OP_AUTO_OFF:
-                    m_arrTapArgs[ a_nTapEvent ] = CfgFileReadLine( a_rFile, Sg_arrCfgTapEventArgs[ a_nTapEvent ], "60" );
+                    m_arrTapArgs[ a_nTapEvent ] = CConfigUtils::ReadValue( a_rFile, Sg_arrCfgTapEventArgs[ a_nTapEvent ], "60" );
                     break;
 
                 default:
@@ -234,7 +235,7 @@ void CManualSwitch::SetState( bool a_bStateOn, ulong a_nAutoOff )
 
 void CManualSwitch::OnGroupCmd( byte* payload, uint len )
 {
-    if( StringBeginsWith( MQTT_CMD_GRP_FWD_LONG_TAP, MQTT_CMD_GRP_FWD_LONG_TAP_LEN, payload, len ))
+    if( CStringUtils::BeginsWith( MQTT_CMD_GRP_FWD_LONG_TAP, MQTT_CMD_GRP_FWD_LONG_TAP_LEN, payload, len ))
     {
         payload += MQTT_CMD_GRP_FWD_LONG_TAP_LEN + 1;    // skip the separator
         len -= MQTT_CMD_GRP_FWD_LONG_TAP_LEN + 1;
@@ -257,7 +258,7 @@ void CManualSwitch::OnGroupCmd( byte* payload, uint len )
                 this->m_pszClearMask = NULL;
             });
     }
-    else if( StringBeginsWith( MQTT_CMD_GRP_FWD_SHORT_TAP, MQTT_CMD_GRP_FWD_SHORT_TAP_LEN, payload, len ))
+    else if( CStringUtils::BeginsWith( MQTT_CMD_GRP_FWD_SHORT_TAP, MQTT_CMD_GRP_FWD_SHORT_TAP_LEN, payload, len ))
     {
         payload += MQTT_CMD_GRP_FWD_SHORT_TAP_LEN + 1;   // skip the separator
         len -= MQTT_CMD_GRP_FWD_SHORT_TAP_LEN + 1;
@@ -269,7 +270,7 @@ void CManualSwitch::OnGroupCmd( byte* payload, uint len )
                 this->m_pszClearMask = NULL;
             });
     }
-    else if( StringBeginsWith( MQTT_CMD_GRP_TURN_OFF, MQTT_CMD_GRP_TURN_OFF_LEN, payload, len ))
+    else if( CStringUtils::BeginsWith( MQTT_CMD_GRP_TURN_OFF, MQTT_CMD_GRP_TURN_OFF_LEN, payload, len ))
     {
         payload += MQTT_CMD_GRP_TURN_OFF_LEN + 1;   // skip the separator
         len -= MQTT_CMD_GRP_TURN_OFF_LEN + 1;
@@ -328,9 +329,9 @@ void CManualSwitch::GroupMaskClearBits( String& a_rstrMask )
 
     for( int nIdx = 2; nIdx < MQTT_CMD_MASK_LEN; nIdx++ )
     {
-        byte nVal = NibbleToU8_16( a_rstrMask[ nIdx ]);
-        byte nMask = NibbleToU8_16( m_pszClearMask[ nIdx ]);
-        a_rstrMask[ nIdx ] = U8ToNibble_16( nVal & ( ~nMask ));
+        byte nVal = CStringUtils::NibbleToU8_16( a_rstrMask[ nIdx ]);
+        byte nMask = CStringUtils::NibbleToU8_16( m_pszClearMask[ nIdx ]);
+        a_rstrMask[ nIdx ] = CStringUtils::U8ToNibble_16( nVal & ( ~nMask ));
     }
 }
 
@@ -344,7 +345,7 @@ bool CManualSwitch::GroupMaskMatch( byte* payload )
     uint8_t nId = m_nId - 1;
     uint8_t nNibble = nId >> 2;         // same as: nId / 4
     uint8_t nMask = 1 << ( nId & 3 );   // same as: 1 << ( nId % 4 )
-    uint8_t nCmdMask = NibbleToU8_16( payload[ 2 + ( 15 - nNibble )]);  // 2: skip '0x', 15:reverse nibbles (LSB nibble at the last index)
+    uint8_t nCmdMask = CStringUtils::NibbleToU8_16( payload[ 2 + ( 15 - nNibble )]);  // 2: skip '0x', 15:reverse nibbles (LSB nibble at the last index)
     return ( nMask & nCmdMask ) == nMask;
 }
 
@@ -357,7 +358,7 @@ void CManualSwitch::OnGroupMaskCmd( byte* payload, uint len, std::function< void
             const char* pMask = (const char*)payload;
             payload += MQTT_CMD_MASK_LEN + 1;
             len -= MQTT_CMD_MASK_LEN + 1;
-            uint16_t nCnt = AtoU16_10( payload, len );
+            uint16_t nCnt = CStringUtils::AtoU16_10( payload, len );
             a_fnAction( pMask, nCnt );
         }
     }
